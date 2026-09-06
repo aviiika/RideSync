@@ -1,0 +1,29 @@
+{
+  "id": "ROUTE-A",
+  "name": "Main Campus Loop",
+  "color": "#2563eb",
+  "average_speed_kmh": 22,
+  "loop_mode": "LOOP",
+  "geometry": [
+    [79.15590, 12.96950],
+    [79.15640, 12.97010],
+    [79.15700, 12.97080],
+    [79.15790, 12.97140],
+    [79.15880, 12.97120],
+    [79.15950, 12.97040],
+    [79.15980, 12.96940],
+    [79.15920, 12.96860],
+    [79.15810, 12.96820],
+    [79.15700, 12.96830],
+    [79.15620, 12.96880],
+    [79.15590, 12.96950]
+  ],
+  "stops": [
+    { "id": "STOP-A1", "name": "Main Gate",        "sequence": 0, "geometry_index": 0,  "latitude": 12.96950, "longitude": 79.15590 },
+    { "id": "STOP-A2", "name": "Academic Block 1", "sequence": 1, "geometry_index": 2,  "latitude": 12.97080, "longitude": 79.15700 },
+    { "id": "STOP-A3", "name": "Technology Tower", "sequence": 2, "geometry_index": 4,  "latitude": 12.97120, "longitude": 79.15880 },
+    { "id": "STOP-A4", "name": "Central Library",  "sequence": 3, "geometry_index": 6,  "latitude": 12.96940, "longitude": 79.15980 },
+    { "id": "STOP-A5", "name": "Food Court",       "sequence": 4, "geometry_index": 8,  "latitude": 12.96820, "longitude": 79.15810 },
+    { "id": "STOP-A6", "name": "Hostel Block",     "sequence": 5, "geometry_index": 10, "latitude": 12.96880, "longitude": 79.15620 }
+  ]
+}

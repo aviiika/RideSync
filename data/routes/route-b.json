@@ -1,0 +1,25 @@
+{
+  "id": "ROUTE-B",
+  "name": "North Hostel Shuttle",
+  "color": "#16a34a",
+  "average_speed_kmh": 18,
+  "loop_mode": "REVERSE",
+  "geometry": [
+    [79.15450, 12.96900],
+    [79.15520, 12.96980],
+    [79.15610, 12.97050],
+    [79.15720, 12.97160],
+    [79.15840, 12.97230],
+    [79.15960, 12.97280],
+    [79.16060, 12.97230],
+    [79.16140, 12.97150],
+    [79.16200, 12.97050]
+  ],
+  "stops": [
+    { "id": "STOP-B1", "name": "Men's Hostel Gate", "sequence": 0, "geometry_index": 0, "latitude": 12.96900, "longitude": 79.15450 },
+    { "id": "STOP-B2", "name": "SJT Block",         "sequence": 1, "geometry_index": 2, "latitude": 12.97050, "longitude": 79.15610 },
+    { "id": "STOP-B3", "name": "Anna Auditorium",   "sequence": 2, "geometry_index": 4, "latitude": 12.97230, "longitude": 79.15840 },
+    { "id": "STOP-B4", "name": "Health Centre",     "sequence": 3, "geometry_index": 6, "latitude": 12.97230, "longitude": 79.16060 },
+    { "id": "STOP-B5", "name": "Ladies Hostel",     "sequence": 4, "geometry_index": 8, "latitude": 12.97050, "longitude": 79.16200 }
+  ]
+}
