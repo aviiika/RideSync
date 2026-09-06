@@ -32,12 +32,12 @@ import {
   EMPTY_COLLECTION,
   LAYER_SHUTTLE_BODY,
   LAYER_STOP,
-  SHUTTLE_BUS_ICON,
+  SHUTTLE_ARROW_ICON,
   SOURCE_ROUTES,
   SOURCE_SHUTTLES,
   SOURCE_STOPS,
   SOURCE_USER,
-  createBusImage,
+  createArrowImage,
   layerSpecs,
   networkBounds,
   pointToGeoJson,
@@ -182,8 +182,8 @@ export function ShuttleMap({
       }
 
       try {
-        if (!map.hasImage(SHUTTLE_BUS_ICON)) {
-          map.addImage(SHUTTLE_BUS_ICON, createBusImage(), { sdf: true });
+        if (!map.hasImage(SHUTTLE_ARROW_ICON)) {
+          map.addImage(SHUTTLE_ARROW_ICON, createArrowImage(), { sdf: true });
         }
 
         for (const id of [SOURCE_ROUTES, SOURCE_STOPS, SOURCE_SHUTTLES, SOURCE_USER]) {

@@ -398,7 +398,7 @@ and is stubbed; its logic lives in pure functions that are tested directly.
 | A device fix outside campus is refused | Campus ETAs cannot apply from three kilometres away; a wrong answer is worse than no answer |
 | Place search over stops, not a geocoder | A campus has a finite list of places, and free-text search could return somewhere no shuttle goes |
 | Shuttles grouped by distance, ordered by arrival | Distance is what a rider glances at; arrival is what decides. Grouping never reorders within a group |
-| Bus icon drawn top-down, not side-on | The marker rotates with heading; a side view would be upside down half the time |
+| Vehicle marker is an arrow, not a bus silhouette | The icon rotates with heading, and at marker size a chevron reads as direction more clearly than a vehicle shape |
 | Test files run one at a time | Eleven parallel jsdom environments on this path produced worker-spawn failures and timeouts that looked like test failures |
 | Stop boards filter by route, not proximity | Only a shuttle whose route calls here can ever arrive, however near anything else is |
 | The recommendation accounts for the walk | Telling someone to run for a bus they cannot catch is worse than telling them nothing |
