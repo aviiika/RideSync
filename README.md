@@ -19,12 +19,18 @@ is, which way it is heading, when it arrives, and whether waiting is worthwhile.
 | 1 | Repository discovery | Done |
 | 2 | Skeleton — backend, frontend, seed data, docs | Done |
 | 3 | Live map: geospatial, simulation, ETA, recommendation, WebSocket, demo controls | Done |
-| 4 | Makefile, CI workflow, architecture document | Next |
-| 5 | Pitch polish and demo script | Planned |
+| 4 | Makefile, CI workflow, architecture document | Done |
+| 5 | Pitch polish and demo script | Next |
 
 ---
 
 ## Architecture
+
+[`docs/architecture.md`](docs/architecture.md) is the full design document —
+module boundaries, why position is stored as a distance along a route, why
+"nearby" is ranked by ETA rather than proximity, where a learned ETA model and
+a real GPS feed would attach, the decisions taken with their reasons, and the
+known gaps.
 
 ```text
 Map rendering (MapLibre)
@@ -143,8 +149,23 @@ npm run typecheck
 ```
 
 ```powershell
+npm run lint
+```
+
+```powershell
+npm run test
+```
+
+```powershell
 npm run build
 ```
+
+These are exactly the commands CI runs on every push and pull request; see
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+A `Makefile` wraps all of them — `make check` runs lint, typecheck, tests and
+build together. It is a convenience only: `make` is not installed by default on
+Windows, and every target maps to a command documented above.
 
 ---
 
