@@ -23,11 +23,11 @@ export const LAYER_STOP = 'stop';
 export const LAYER_STOP_LABEL = 'stop-label';
 export const LAYER_SHUTTLE_HALO = 'shuttle-halo';
 export const LAYER_SHUTTLE_BODY = 'shuttle-body';
-export const LAYER_SHUTTLE_ARROW = 'shuttle-arrow';
+export const LAYER_SHUTTLE_BUS = 'shuttle-bus';
 export const LAYER_USER_HALO = 'user-halo';
 export const LAYER_USER_DOT = 'user-dot';
 
-export const SHUTTLE_ARROW_ICON = 'shuttle-arrow-icon';
+export const SHUTTLE_BUS_ICON = 'shuttle-bus-icon';
 
 type Collection = FeatureCollection<Geometry>;
 
@@ -99,12 +99,17 @@ export function pointToGeoJson(longitude: number, latitude: number): Collection 
 }
 
 /**
- * A white arrow drawn to a canvas, registered as an SDF image.
+ * A bus drawn top-down to a canvas, registered as an SDF image.
+ *
+ * Top-down rather than a side-on silhouette, because the icon rotates with the
+ * vehicle's heading: a side view would end up upside down half the time. The
+ * shape is deliberately asymmetric - a tapered nose, a windscreen band, and a
+ * squared tail - so which way it is pointing is readable at marker size.
  *
  * SDF is what allows `icon-color` to tint one shared image per route colour,
  * instead of shipping an icon file for every colour in the network.
  */
-export function createArrowImage(size = 24): ImageData {
+export function createBusImage(size = 32): ImageData {
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -116,15 +121,34 @@ export function createArrowImage(size = 24): ImageData {
     return new ImageData(size, size);
   }
 
-  const middle = size / 2;
+  const s = size;
   context.fillStyle = '#ffffff';
+
+  // Body: a rounded rectangle running nose-up, narrower at the front.
+  const left = s * 0.28;
+  const right = s * 0.72;
+  const nose = s * 0.1;
+  const tail = s * 0.9;
+  const inset = s * 0.06;
+
   context.beginPath();
-  context.moveTo(middle, size * 0.16);
-  context.lineTo(size * 0.82, size * 0.84);
-  context.lineTo(middle, size * 0.66);
-  context.lineTo(size * 0.18, size * 0.84);
+  context.moveTo(left + inset, nose);
+  context.lineTo(right - inset, nose);
+  context.quadraticCurveTo(right, nose, right, nose + inset);
+  context.lineTo(right, tail - inset);
+  context.quadraticCurveTo(right, tail, right - inset, tail);
+  context.lineTo(left + inset, tail);
+  context.quadraticCurveTo(left, tail, left, tail - inset);
+  context.lineTo(left, nose + inset);
+  context.quadraticCurveTo(left, nose, left + inset, nose);
   context.closePath();
   context.fill();
+
+  // Windscreen and rear window, punched out so the nose reads at a glance.
+  context.globalCompositeOperation = 'destination-out';
+  context.fillRect(left + inset, nose + s * 0.07, right - left - inset * 2, s * 0.1);
+  context.fillRect(left + inset, tail - s * 0.16, right - left - inset * 2, s * 0.07);
+  context.globalCompositeOperation = 'source-over';
 
   return context.getImageData(0, 0, size, size);
 }
@@ -213,12 +237,12 @@ export function layerSpecs(): LayerSpecification[] {
       },
     },
     {
-      id: LAYER_SHUTTLE_ARROW,
+      id: LAYER_SHUTTLE_BUS,
       type: 'symbol',
       source: SOURCE_SHUTTLES,
       layout: {
-        'icon-image': SHUTTLE_ARROW_ICON,
-        'icon-size': 0.55,
+        'icon-image': SHUTTLE_BUS_ICON,
+        'icon-size': 0.8,
         // Rotate with the map so the arrow always points where the shuttle is
         // actually heading, not where it heads on an unrotated screen.
         'icon-rotate': ['get', 'heading'],
@@ -279,7 +303,7 @@ export function routeFilterExpressions(routeId: string | null): Record<string, u
       [LAYER_STOP]: null,
       [LAYER_STOP_LABEL]: null,
       [LAYER_SHUTTLE_BODY]: null,
-      [LAYER_SHUTTLE_ARROW]: null,
+      [LAYER_SHUTTLE_BUS]: null,
       [LAYER_SHUTTLE_HALO]: ['==', ['get', 'selected'], true],
     };
   }
@@ -292,7 +316,7 @@ export function routeFilterExpressions(routeId: string | null): Record<string, u
     [LAYER_STOP]: onRoute,
     [LAYER_STOP_LABEL]: onRoute,
     [LAYER_SHUTTLE_BODY]: onRoute,
-    [LAYER_SHUTTLE_ARROW]: onRoute,
+    [LAYER_SHUTTLE_BUS]: onRoute,
     [LAYER_SHUTTLE_HALO]: ['all', ['==', ['get', 'selected'], true], onRoute],
   };
 }

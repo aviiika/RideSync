@@ -15,6 +15,7 @@ import { describeRiderSource, type RiderSource } from '../../stores/riderStore';
 
 interface LocationControlProps {
   source: RiderSource;
+  placeName: string | null;
   picking: boolean;
   locating: boolean;
   error: string | null;
@@ -26,6 +27,7 @@ interface LocationControlProps {
 
 export function LocationControl({
   source,
+  placeName,
   picking,
   locating,
   error,
@@ -38,7 +40,9 @@ export function LocationControl({
     <div className="pointer-events-auto flex flex-col gap-1.5 rounded-panel border border-border bg-surface/95 p-1.5 shadow-sm backdrop-blur">
       <div className="flex items-center gap-1.5">
         <MapPin className="ml-1 h-3.5 w-3.5 shrink-0 text-brand" aria-hidden="true" />
-        <span className="mr-1 text-xs text-muted">{describeRiderSource(source)}</span>
+        <span className="mr-1 max-w-[12rem] truncate text-xs text-muted">
+          {describeRiderSource(source, placeName)}
+        </span>
 
         {picking ? (
           <button

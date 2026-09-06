@@ -1,0 +1,32 @@
+{
+  "id": "ROUTE-AC",
+  "name": "Academic Block Circuit",
+  "color": "#2563eb",
+  "average_speed_kmh": 15,
+  "loop_mode": "LOOP",
+  "geometry": [
+    [79.15680, 12.97000],
+    [79.15720, 12.97050],
+    [79.15780, 12.97140],
+    [79.15760, 12.97300],
+    [79.15870, 12.97240],
+    [79.15900, 12.97060],
+    [79.16095, 12.97140],
+    [79.16180, 12.97060],
+    [79.16000, 12.96990],
+    [79.15800, 12.96960],
+    [79.15700, 12.96970],
+    [79.15680, 12.97000]
+  ],
+  "stops": [
+    { "id": "STOP-AC-01", "name": "Main Building",      "sequence": 0, "geometry_index": 0, "latitude": 12.97000, "longitude": 79.15680 },
+    { "id": "STOP-AC-02", "name": "Central Library",    "sequence": 1, "geometry_index": 1, "latitude": 12.97050, "longitude": 79.15720 },
+    { "id": "STOP-AC-03", "name": "Anna Auditorium",    "sequence": 2, "geometry_index": 2, "latitude": 12.97140, "longitude": 79.15780 },
+    { "id": "STOP-AC-04", "name": "PRP Block",          "sequence": 3, "geometry_index": 3, "latitude": 12.97300, "longitude": 79.15760 },
+    { "id": "STOP-AC-05", "name": "CDMM Block",         "sequence": 4, "geometry_index": 5, "latitude": 12.97060, "longitude": 79.15900 },
+    { "id": "STOP-AC-06", "name": "Technology Tower",   "sequence": 5, "geometry_index": 6, "latitude": 12.97140, "longitude": 79.16095 },
+    { "id": "STOP-AC-07", "name": "MGR Block",          "sequence": 6, "geometry_index": 7, "latitude": 12.97060, "longitude": 79.16180 },
+    { "id": "STOP-AC-08", "name": "SJT Block",          "sequence": 7, "geometry_index": 8, "latitude": 12.96990, "longitude": 79.16000 },
+    { "id": "STOP-AC-09", "name": "SMV Block",          "sequence": 8, "geometry_index": 9, "latitude": 12.96960, "longitude": 79.15800 }
+  ]
+}

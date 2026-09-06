@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { ConnectionBanner } from './components/common/ConnectionBanner';
 import { ShuttleMap } from './components/map/ShuttleMap';
 import { SimulationControls } from './components/simulation/SimulationControls';
+import { LocationSearch } from './components/shuttle/LocationSearch';
 import { NearestShuttleCard } from './components/shuttle/NearestShuttleCard';
 import { StopBoard } from './components/shuttle/StopBoard';
 import { ShuttleDetailsPanel } from './components/shuttle/ShuttleDetailsPanel';
@@ -25,9 +26,18 @@ import {
 } from './hooks/useNetwork';
 import { useShuttleStream } from './hooks/useShuttleStream';
 import { isTelemetryStale, useShuttleStore } from './stores/shuttleStore';
-import { useRiderStore } from './stores/riderStore';
+import type { ShuttleSnapshot } from './types/domain';
+import { describeRiderSource, useRiderStore } from './stores/riderStore';
 import type { ConnectionStatus } from './types/ws';
 import { formatDistance } from './utils/format';
+
+/**
+ * Where "nearby" stops and "further away" begins.
+ *
+ * Roughly five minutes on foot: close enough that walking to meet the shuttle
+ * is a real option.
+ */
+const NEAR_DISTANCE_M = 400;
 
 export function App() {
   useShuttleStream();
@@ -36,6 +46,9 @@ export function App() {
   // should not open with a permission dialog, so the device is never asked
   // unless someone presses the button.
   const rider = useRiderStore((state) => state.position);
+  const riderSource = useRiderStore((state) => state.source);
+  const riderPlace = useRiderStore((state) => state.placeName);
+  const setRiderPosition = useRiderStore((state) => state.setPosition);
 
   const routes = useRoutes();
   const nearby = useNearbyShuttles(rider.latitude, rider.longitude);
@@ -67,6 +80,13 @@ export function App() {
   );
   const nearest = snapshots[0];
   const stops = (routes.data ?? []).flatMap((route) => route.stops);
+
+  // Grouped by how far the shuttle is, ordered by when it arrives. Distance is
+  // what a rider glances at; arrival is what actually decides the answer, so
+  // the grouping never reorders within a group.
+  const others = snapshots.slice(1);
+  const closeBy = others.filter((item) => item.direct_distance_m <= NEAR_DISTANCE_M);
+  const faraway = others.filter((item) => item.direct_distance_m > NEAR_DISTANCE_M);
   const selectedSnapshot = snapshots.find((item) => item.shuttle.id === selectedId);
 
   return (
@@ -121,6 +141,18 @@ export function App() {
           <div className={sheetOpen ? 'contents' : 'hidden lg:contents'}>
               <ConnectionBanner status={connection} stale={stale} />
 
+            <LocationSearch
+              stops={stops}
+              currentLabel={describeRiderSource(riderSource, riderPlace)}
+              onPick={(stop) =>
+                setRiderPosition(
+                  { latitude: stop.latitude, longitude: stop.longitude },
+                  'place',
+                  stop.name,
+                )
+              }
+            />
+
             {selectedStopId ? (
               <StopBoard
                 stop={stops.find((stop) => stop.id === selectedStopId)}
@@ -166,43 +198,20 @@ export function App() {
               </p>
             ) : null}
 
-            {snapshots.length > 1 ? (
-              <section className="rounded-panel border border-border bg-surface p-3">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                  Other shuttles
-                </h2>
-                <ul className="mt-2 flex flex-col divide-y divide-border">
-                  {snapshots.slice(1).map((snapshot) => (
-                    <li key={snapshot.shuttle.id}>
-                      <button
-                        type="button"
-                        onClick={() => selectShuttle(snapshot.shuttle.id)}
-                        className="flex w-full items-center justify-between gap-3 py-2.5 text-left transition hover:opacity-70"
-                      >
-                        <span className="flex min-w-0 items-center gap-2">
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: snapshot.route_color }}
-                            aria-hidden="true"
-                          />
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-medium">
-                              {snapshot.shuttle.name}
-                            </span>
-                            <span className="block truncate text-xs text-muted">
-                              {formatDistance(snapshot.direct_distance_m)} away
-                            </span>
-                          </span>
-                        </span>
-                        <EtaBadge eta={snapshot.eta} size="small" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
+            <ShuttleGroup
+              title={`Nearby · within ${NEAR_DISTANCE_M} m`}
+              snapshots={closeBy}
+              onSelect={selectShuttle}
+              emptyLabel="No shuttle is close to you right now."
+            />
 
-              <p className="px-1 pb-1 text-xs text-muted">
+            <ShuttleGroup
+              title="Further away"
+              snapshots={faraway}
+              onSelect={selectShuttle}
+            />
+
+            <p className="px-1 pb-1 text-xs text-muted">
                 Telemetry is simulated, not real GPS. The architecture is built so a real fleet
                 feed can replace it without changing this interface.
               </p>
@@ -210,6 +219,71 @@ export function App() {
         </aside>
       </main>
     </div>
+  );
+}
+
+/**
+ * A group of shuttles in the panel: near, or far.
+ *
+ * Renders nothing at all when empty unless given a label to show, so an
+ * absent group never leaves a bare heading behind.
+ */
+function ShuttleGroup({
+  title,
+  snapshots,
+  onSelect,
+  emptyLabel,
+}: {
+  title: string;
+  snapshots: ShuttleSnapshot[];
+  onSelect: (shuttleId: string) => void;
+  emptyLabel?: string;
+}) {
+  if (snapshots.length === 0 && !emptyLabel) {
+    return null;
+  }
+
+  return (
+    <section className="rounded-panel border border-border bg-surface p-3">
+      <h2 className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted">
+        <span>{title}</span>
+        {snapshots.length > 0 ? <span>{snapshots.length}</span> : null}
+      </h2>
+
+      {snapshots.length === 0 ? (
+        <p className="mt-2 text-sm text-muted">{emptyLabel}</p>
+      ) : (
+        <ul className="mt-2 flex flex-col divide-y divide-border">
+          {snapshots.map((snapshot) => (
+            <li key={snapshot.shuttle.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(snapshot.shuttle.id)}
+                className="flex w-full items-center justify-between gap-3 py-2.5 text-left transition hover:opacity-70"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: snapshot.route_color }}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium">
+                      {snapshot.shuttle.name}
+                    </span>
+                    <span className="block truncate text-xs text-muted">
+                      {formatDistance(snapshot.direct_distance_m)} away
+                      {snapshot.shuttle.status === 'DELAYED' ? ' · running late' : ''}
+                    </span>
+                  </span>
+                </span>
+                <EtaBadge eta={snapshot.eta} size="small" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

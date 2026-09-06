@@ -19,6 +19,11 @@ export default defineConfig({
     // The default 'forks' pool fails to spawn workers on this OneDrive-backed
     // Windows path; threads start reliably and run the same suite.
     pool: 'threads',
+    // Files run one at a time. Running eleven jsdom environments concurrently
+    // on this path produced worker-spawn failures and timeouts that looked
+    // like test failures but were not. The suite is small; the wall-clock cost
+    // is a few seconds and the results are trustworthy.
+    fileParallelism: false,
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],

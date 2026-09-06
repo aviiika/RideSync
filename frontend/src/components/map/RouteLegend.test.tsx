@@ -8,7 +8,7 @@ import { routeFilterExpressions } from './layers';
 
 const routes = [
   route,
-  { ...route, id: 'ROUTE-B', name: "Men's Hostel Shuttle", color: '#16a34a' },
+  { ...route, id: 'ROUTE-MH', name: "Main Gate - Men's Hostel", color: '#16a34a' },
 ];
 
 describe('RouteLegend', () => {
@@ -16,34 +16,34 @@ describe('RouteLegend', () => {
     render(<RouteLegend routes={routes} active={null} onChange={vi.fn()} onRecentre={vi.fn()} />);
 
     expect(screen.getByRole('button', { name: /all routes/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /campus ring/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /men's hostel shuttle/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /academic block circuit/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /main gate - men's hostel/i })).toBeInTheDocument();
   });
 
   it('isolates a route when one is picked', async () => {
     const onChange = vi.fn();
     render(<RouteLegend routes={routes} active={null} onChange={onChange} onRecentre={vi.fn()} />);
 
-    await userEvent.click(screen.getByRole('button', { name: /men's hostel shuttle/i }));
-    expect(onChange).toHaveBeenCalledWith('ROUTE-B');
+    await userEvent.click(screen.getByRole('button', { name: /main gate - men's hostel/i }));
+    expect(onChange).toHaveBeenCalledWith('ROUTE-MH');
   });
 
   it('clears the filter when the active route is picked again', async () => {
     const onChange = vi.fn();
     render(
-      <RouteLegend routes={routes} active="ROUTE-B" onChange={onChange} onRecentre={vi.fn()} />,
+      <RouteLegend routes={routes} active="ROUTE-MH" onChange={onChange} onRecentre={vi.fn()} />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /men's hostel shuttle/i }));
+    await userEvent.click(screen.getByRole('button', { name: /main gate - men's hostel/i }));
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
   it('marks which filter is active', () => {
     render(
-      <RouteLegend routes={routes} active="ROUTE-B" onChange={vi.fn()} onRecentre={vi.fn()} />,
+      <RouteLegend routes={routes} active="ROUTE-MH" onChange={vi.fn()} onRecentre={vi.fn()} />,
     );
 
-    expect(screen.getByRole('button', { name: /men's hostel shuttle/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /main gate - men's hostel/i })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -87,24 +87,24 @@ describe('routeFilterExpressions', () => {
   });
 
   it('narrows lines by route id and everything else by route_id', () => {
-    const filters = routeFilterExpressions('ROUTE-B');
+    const filters = routeFilterExpressions('ROUTE-MH');
 
-    expect(filters['route-line']).toEqual(['==', ['get', 'id'], 'ROUTE-B']);
-    expect(filters['stop']).toEqual(['==', ['get', 'route_id'], 'ROUTE-B']);
-    expect(filters['shuttle-body']).toEqual(['==', ['get', 'route_id'], 'ROUTE-B']);
+    expect(filters['route-line']).toEqual(['==', ['get', 'id'], 'ROUTE-MH']);
+    expect(filters['stop']).toEqual(['==', ['get', 'route_id'], 'ROUTE-MH']);
+    expect(filters['shuttle-body']).toEqual(['==', ['get', 'route_id'], 'ROUTE-MH']);
   });
 
   it('combines selection and route for the halo', () => {
-    expect(routeFilterExpressions('ROUTE-B')['shuttle-halo']).toEqual([
+    expect(routeFilterExpressions('ROUTE-MH')['shuttle-halo']).toEqual([
       'all',
       ['==', ['get', 'selected'], true],
-      ['==', ['get', 'route_id'], 'ROUTE-B'],
+      ['==', ['get', 'route_id'], 'ROUTE-MH'],
     ]);
   });
 
   it('covers every filterable layer in both modes', () => {
     expect(Object.keys(routeFilterExpressions(null)).sort()).toEqual(
-      Object.keys(routeFilterExpressions('ROUTE-B')).sort(),
+      Object.keys(routeFilterExpressions('ROUTE-MH')).sort(),
     );
   });
 });

@@ -1,0 +1,30 @@
+{
+  "id": "ROUTE-LH",
+  "name": "Main Gate - Ladies Hostel",
+  "color": "#db2777",
+  "average_speed_kmh": 16,
+  "loop_mode": "REVERSE",
+  "geometry": [
+    [79.15540, 12.96920],
+    [79.15650, 12.96900],
+    [79.15800, 12.96960],
+    [79.15900, 12.96975],
+    [79.16000, 12.96990],
+    [79.16040, 12.96920],
+    [79.16050, 12.96850],
+    [79.16100, 12.96820],
+    [79.16150, 12.96790],
+    [79.16230, 12.96740],
+    [79.16320, 12.96700]
+  ],
+  "stops": [
+    { "id": "STOP-LH-01", "name": "Main Gate",              "sequence": 0, "geometry_index": 0,  "latitude": 12.96920, "longitude": 79.15540 },
+    { "id": "STOP-LH-02", "name": "SMV Block",              "sequence": 1, "geometry_index": 2,  "latitude": 12.96960, "longitude": 79.15800 },
+    { "id": "STOP-LH-03", "name": "SJT Block",              "sequence": 2, "geometry_index": 4,  "latitude": 12.96990, "longitude": 79.16000 },
+    { "id": "STOP-LH-04", "name": "Ladies Hostel A Block",  "sequence": 3, "geometry_index": 6,  "latitude": 12.96850, "longitude": 79.16050 },
+    { "id": "STOP-LH-05", "name": "Ladies Hostel Mess",     "sequence": 4, "geometry_index": 7,  "latitude": 12.96820, "longitude": 79.16100 },
+    { "id": "STOP-LH-06", "name": "Ladies Hostel F Block",  "sequence": 5, "geometry_index": 8,  "latitude": 12.96790, "longitude": 79.16150 },
+    { "id": "STOP-LH-07", "name": "Ladies Hostel G Block",  "sequence": 6, "geometry_index": 9,  "latitude": 12.96740, "longitude": 79.16230 },
+    { "id": "STOP-LH-08", "name": "Ladies Hostel S Block",  "sequence": 7, "geometry_index": 10, "latitude": 12.96700, "longitude": 79.16320 }
+  ]
+}

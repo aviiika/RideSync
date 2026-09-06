@@ -6,7 +6,7 @@
  * states, and that the rider's answer is on screen.
  */
 
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -47,6 +47,8 @@ beforeEach(() => {
     simulation: null,
     connection: 'connected',
     selectedShuttleId: null,
+    selectedStopId: null,
+    routeFilter: null,
     lastUpdateAt: Date.now(),
   });
 });
@@ -74,7 +76,7 @@ describe('App', () => {
 
     // Anchored: /next shuttle/i would also match the "Finding your next
     // shuttle..." loading line and pass before the card has rendered.
-    expect(await screen.findByText('Campus Ring 1')).toBeInTheDocument();
+    expect(await screen.findByText('Academic Block Circuit 1')).toBeInTheDocument();
     expect(screen.getByText(/^Next shuttle$/i)).toBeInTheDocument();
     expect(screen.getByText('~4')).toBeInTheDocument();
     expect(screen.getByText('Worth waiting')).toBeInTheDocument();
@@ -85,7 +87,7 @@ describe('App', () => {
     useShuttleStore.setState({ shuttles: { [shuttle.id]: shuttle }, shuttleIds: [shuttle.id] });
     renderWithProviders(<App />);
 
-    await userEvent.click(await screen.findByRole('button', { name: /campus ring 1/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /academic block circuit 1/i }));
 
     expect(await screen.findByText(/route progress/i)).toBeInTheDocument();
     expect(screen.getByText('31%')).toBeInTheDocument();
@@ -97,7 +99,7 @@ describe('App', () => {
     useShuttleStore.setState({ shuttles: { [shuttle.id]: shuttle }, shuttleIds: [shuttle.id] });
     renderWithProviders(<App />);
 
-    await userEvent.click(await screen.findByRole('button', { name: /campus ring 1/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /academic block circuit 1/i }));
     await userEvent.click(screen.getByRole('button', { name: /close shuttle details/i }));
 
     expect(await screen.findByText(/^Next shuttle$/i)).toBeInTheDocument();
@@ -131,5 +133,49 @@ describe('App', () => {
     mockApi(healthy);
     renderWithProviders(<App />);
     expect(await screen.findByText(/telemetry is simulated, not real gps/i)).toBeInTheDocument();
+  });
+});
+
+describe('near and far grouping', () => {
+  it('separates close shuttles from distant ones', async () => {
+    const near = { ...snapshot, shuttle: { ...shuttle, id: 'NEAR-1', name: 'Near One' }, direct_distance_m: 180 };
+    const far = { ...snapshot, shuttle: { ...shuttle, id: 'FAR-1', name: 'Far One' }, direct_distance_m: 1400 };
+
+    mockApi((path) =>
+      path.includes('/shuttles/nearby')
+        ? { ok: true, body: [snapshot, near, far] }
+        : healthy(path),
+    );
+    renderWithProviders(<App />);
+
+    // Wait on real content: the group headings render before the data does.
+    expect(await screen.findByText('Near One')).toBeInTheDocument();
+    expect(screen.getByText('Far One')).toBeInTheDocument();
+    expect(screen.getByText(/nearby ·/i)).toBeInTheDocument();
+    expect(screen.getByText(/further away/i)).toBeInTheDocument();
+  });
+
+  it('says when nothing is close, instead of an empty heading', async () => {
+    const far = { ...snapshot, shuttle: { ...shuttle, id: 'FAR-1', name: 'Far One' }, direct_distance_m: 1400 };
+
+    mockApi((path) =>
+      path.includes('/shuttles/nearby') ? { ok: true, body: [snapshot, far] } : healthy(path),
+    );
+    renderWithProviders(<App />);
+
+    expect(await screen.findByText(/no shuttle is close to you/i)).toBeInTheDocument();
+  });
+
+  it('lets you set your location by name', async () => {
+    mockApi(healthy);
+    renderWithProviders(<App />);
+
+    const input = await screen.findByRole('textbox');
+    await userEvent.type(input, 'main building');
+
+    const suggestions = screen.getByRole('list', { hidden: false });
+    expect(
+      within(suggestions).getByRole('button', { name: /main building/i }),
+    ).toBeInTheDocument();
   });
 });

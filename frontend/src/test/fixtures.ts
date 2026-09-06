@@ -9,8 +9,8 @@ import type {
 } from '../types/domain';
 
 export const route: Route = {
-  id: 'ROUTE-A',
-  name: 'Campus Ring',
+  id: 'ROUTE-AC',
+  name: 'Academic Block Circuit',
   color: '#2563eb',
   average_speed_kmh: 22,
   loop_mode: 'LOOP',
@@ -21,9 +21,9 @@ export const route: Route = {
   ],
   stops: [
     {
-      id: 'STOP-A1',
-      name: 'Main Gate',
-      route_id: 'ROUTE-A',
+      id: 'STOP-AC-01',
+      name: 'Main Building',
+      route_id: 'ROUTE-AC',
       sequence: 0,
       latitude: 12.9695,
       longitude: 79.1559,
@@ -32,9 +32,9 @@ export const route: Route = {
 };
 
 export const shuttle: Shuttle = {
-  id: 'ROUTE-A-01',
-  route_id: 'ROUTE-A',
-  name: 'Campus Ring 1',
+  id: 'ROUTE-AC-01',
+  route_id: 'ROUTE-AC',
+  name: 'Academic Block Circuit 1',
   status: 'IN_SERVICE',
   latitude: 12.9701,
   longitude: 79.1564,
@@ -42,18 +42,18 @@ export const shuttle: Shuttle = {
   speed_kmh: 22,
   progress: 0.31,
   occupancy: 0.4,
-  next_stop_id: 'STOP-A3',
+  next_stop_id: 'STOP-AC-03',
   next_stop_name: 'Anna Auditorium',
   updated_at: '2026-09-06T09:30:00Z',
 };
 
 export const snapshot: ShuttleSnapshot = {
   shuttle,
-  route_name: 'Campus Ring',
+  route_name: 'Academic Block Circuit',
   route_color: '#2563eb',
   direct_distance_m: 1240,
-  target_stop_id: 'STOP-A1',
-  target_stop_name: 'Main Gate',
+  target_stop_id: 'STOP-AC-01',
+  target_stop_name: 'Main Building',
   eta: {
     minutes: 4,
     seconds: 232.5,

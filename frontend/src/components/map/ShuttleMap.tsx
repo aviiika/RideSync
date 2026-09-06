@@ -32,12 +32,12 @@ import {
   EMPTY_COLLECTION,
   LAYER_SHUTTLE_BODY,
   LAYER_STOP,
-  SHUTTLE_ARROW_ICON,
+  SHUTTLE_BUS_ICON,
   SOURCE_ROUTES,
   SOURCE_SHUTTLES,
   SOURCE_STOPS,
   SOURCE_USER,
-  createArrowImage,
+  createBusImage,
   layerSpecs,
   networkBounds,
   pointToGeoJson,
@@ -80,6 +80,7 @@ export function ShuttleMap({
   onChangeRouteFilter,
 }: ShuttleMapProps) {
   const riderSource = useRiderStore((state) => state.source);
+  const riderPlace = useRiderStore((state) => state.placeName);
   const picking = useRiderStore((state) => state.picking);
   const locationError = useRiderStore((state) => state.locationError);
   const startPicking = useRiderStore((state) => state.startPicking);
@@ -181,8 +182,8 @@ export function ShuttleMap({
       }
 
       try {
-        if (!map.hasImage(SHUTTLE_ARROW_ICON)) {
-          map.addImage(SHUTTLE_ARROW_ICON, createArrowImage(), { sdf: true });
+        if (!map.hasImage(SHUTTLE_BUS_ICON)) {
+          map.addImage(SHUTTLE_BUS_ICON, createBusImage(), { sdf: true });
         }
 
         for (const id of [SOURCE_ROUTES, SOURCE_STOPS, SOURCE_SHUTTLES, SOURCE_USER]) {
@@ -400,6 +401,7 @@ export function ShuttleMap({
         />
         <LocationControl
           source={riderSource}
+          placeName={riderPlace}
           picking={picking}
           locating={locating}
           error={locationError}

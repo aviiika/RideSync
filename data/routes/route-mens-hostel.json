@@ -1,0 +1,42 @@
+{
+  "id": "ROUTE-MH",
+  "name": "Main Gate - Men's Hostel",
+  "color": "#16a34a",
+  "average_speed_kmh": 16,
+  "loop_mode": "REVERSE",
+  "geometry": [
+    [79.15540, 12.96920],
+    [79.15600, 12.96955],
+    [79.15680, 12.97000],
+    [79.15730, 12.97060],
+    [79.15780, 12.97140],
+    [79.15825, 12.97205],
+    [79.15900, 12.97285],
+    [79.15975, 12.97330],
+    [79.16030, 12.97400],
+    [79.16090, 12.97440],
+    [79.16150, 12.97480],
+    [79.16210, 12.97520],
+    [79.16280, 12.97480],
+    [79.16320, 12.97420],
+    [79.16350, 12.97350],
+    [79.16300, 12.97290],
+    [79.16220, 12.97250]
+  ],
+  "stops": [
+    { "id": "STOP-MH-01", "name": "Main Gate",           "sequence": 0,  "geometry_index": 0,  "latitude": 12.96920, "longitude": 79.15540 },
+    { "id": "STOP-MH-02", "name": "Main Building",       "sequence": 1,  "geometry_index": 2,  "latitude": 12.97000, "longitude": 79.15680 },
+    { "id": "STOP-MH-03", "name": "Anna Auditorium",     "sequence": 2,  "geometry_index": 4,  "latitude": 12.97140, "longitude": 79.15780 },
+    { "id": "STOP-MH-04", "name": "Health Centre",       "sequence": 3,  "geometry_index": 5,  "latitude": 12.97205, "longitude": 79.15825 },
+    { "id": "STOP-MH-05", "name": "Men's Hostel Mess",   "sequence": 4,  "geometry_index": 7,  "latitude": 12.97330, "longitude": 79.15975 },
+    { "id": "STOP-MH-06", "name": "Men's Hostel A Block","sequence": 5,  "geometry_index": 8,  "latitude": 12.97400, "longitude": 79.16030 },
+    { "id": "STOP-MH-07", "name": "Men's Hostel B Block","sequence": 6,  "geometry_index": 9,  "latitude": 12.97440, "longitude": 79.16090 },
+    { "id": "STOP-MH-08", "name": "Men's Hostel C Block","sequence": 7,  "geometry_index": 10, "latitude": 12.97480, "longitude": 79.16150 },
+    { "id": "STOP-MH-09", "name": "Men's Hostel D Block","sequence": 8,  "geometry_index": 11, "latitude": 12.97520, "longitude": 79.16210 },
+    { "id": "STOP-MH-10", "name": "Men's Hostel J Block","sequence": 9,  "geometry_index": 12, "latitude": 12.97480, "longitude": 79.16280 },
+    { "id": "STOP-MH-11", "name": "Men's Hostel K Block","sequence": 10, "geometry_index": 13, "latitude": 12.97420, "longitude": 79.16320 },
+    { "id": "STOP-MH-12", "name": "Men's Hostel L Block","sequence": 11, "geometry_index": 14, "latitude": 12.97350, "longitude": 79.16350 },
+    { "id": "STOP-MH-13", "name": "Men's Hostel M Block","sequence": 12, "geometry_index": 15, "latitude": 12.97290, "longitude": 79.16300 },
+    { "id": "STOP-MH-14", "name": "Men's Hostel Q Block","sequence": 13, "geometry_index": 16, "latitude": 12.97250, "longitude": 79.16220 }
+  ]
+}

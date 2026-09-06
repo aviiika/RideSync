@@ -19,7 +19,7 @@ describe('NearestShuttleCard', () => {
     render(<NearestShuttleCard snapshot={snapshot} onSelect={vi.fn()} />);
 
     expect(screen.getByText('1.2 km')).toBeInTheDocument();
-    expect(screen.getByText('Main Gate')).toBeInTheDocument();
+    expect(screen.getByText('Main Building')).toBeInTheDocument();
     expect(screen.getByText(/heading toward anna auditorium/i)).toBeInTheDocument();
   });
 
@@ -33,7 +33,7 @@ describe('NearestShuttleCard', () => {
     render(<NearestShuttleCard snapshot={snapshot} onSelect={onSelect} />);
 
     await userEvent.click(screen.getByRole('button'));
-    expect(onSelect).toHaveBeenCalledWith('ROUTE-A-01');
+    expect(onSelect).toHaveBeenCalledWith('ROUTE-AC-01');
   });
 });
 
@@ -115,7 +115,7 @@ describe('walking model and confidence', () => {
     );
 
     await userEvent.click(screen.getByRole('button', { name: /delay this shuttle/i }));
-    expect(onInjectDelay).toHaveBeenCalledWith('ROUTE-A-01');
+    expect(onInjectDelay).toHaveBeenCalledWith('ROUTE-AC-01');
   });
 
   it('does not offer to delay a shuttle that is already late', () => {

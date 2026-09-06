@@ -108,7 +108,7 @@ def test_geojson_round_trip() -> None:
 # The VIT Vellore campus, generously bounded. The service is a closed campus
 # network: a route or a shuttle outside this box is a bug, not a feature.
 CAMPUS_SOUTH, CAMPUS_NORTH = 12.9650, 12.9760
-CAMPUS_WEST, CAMPUS_EAST = 79.1540, 79.1625
+CAMPUS_WEST, CAMPUS_EAST = 79.1540, 79.1650
 
 
 def test_every_route_stays_inside_campus(repository: JsonRouteRepository) -> None:
@@ -136,5 +136,27 @@ def test_the_network_serves_academic_blocks_and_both_hostel_zones(
 
     assert "men's hostel" in names
     assert "ladies hostel" in names
-    for academic in ("main building", "technology tower", "sjt block", "anna auditorium"):
+    for academic in (
+        "main building",
+        "technology tower",
+        "sjt block",
+        "smv block",
+        "prp block",
+        "mgr block",
+        "anna auditorium",
+        "central library",
+    ):
         assert academic in names, f"no stop serves {academic}"
+
+
+def test_the_hostel_blocks_the_service_exists_for_are_all_served(
+    repository: JsonRouteRepository,
+) -> None:
+    """Named explicitly, because these are the blocks students actually live in."""
+    names = " | ".join(stop.name.lower() for stop in repository.list_stops())
+
+    for block in ("a block", "f block", "g block", "s block"):
+        assert f"ladies hostel {block}" in names, f"no stop at ladies hostel {block}"
+
+    for block in ("a", "b", "c", "d", "j", "k", "l", "m", "q"):
+        assert f"men's hostel {block} block" in names, f"no stop at men's hostel {block} block"

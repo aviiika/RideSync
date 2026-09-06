@@ -96,23 +96,27 @@ class TestDeterministicEta:
     def test_out_of_service_yields_no_estimate(self, geometry: RouteGeometry) -> None:
         shuttle = make_shuttle(geometry, 0.0)
         shuttle.status = ShuttleStatus.OUT_OF_SERVICE
-        assert DeterministicEtaEngine().estimate(shuttle, geometry, "STOP-A2") is None
+        assert (
+            DeterministicEtaEngine().estimate(shuttle, geometry, geometry.route.stops[1].id) is None
+        )
 
     def test_stale_telemetry_yields_no_estimate(self, geometry: RouteGeometry) -> None:
         shuttle = make_shuttle(geometry, 0.0)
         shuttle.status = ShuttleStatus.STALE
-        assert DeterministicEtaEngine().estimate(shuttle, geometry, "STOP-A2") is None
+        assert (
+            DeterministicEtaEngine().estimate(shuttle, geometry, geometry.route.stops[1].id) is None
+        )
 
     def test_minutes_are_rounded_not_precise(self, geometry: RouteGeometry) -> None:
         shuttle = make_shuttle(geometry, 0.0)
-        estimate = DeterministicEtaEngine().estimate(shuttle, geometry, "STOP-A2")
+        estimate = DeterministicEtaEngine().estimate(shuttle, geometry, geometry.route.stops[1].id)
         assert estimate is not None
         assert isinstance(estimate.minutes, int)
 
     def test_an_estimate_reports_its_source(self, geometry: RouteGeometry) -> None:
         """The UI must be able to say the number is arithmetic, not a model."""
         shuttle = make_shuttle(geometry, 0.0)
-        estimate = DeterministicEtaEngine().estimate(shuttle, geometry, "STOP-A2")
+        estimate = DeterministicEtaEngine().estimate(shuttle, geometry, geometry.route.stops[1].id)
         assert estimate is not None
         assert estimate.source == "deterministic"
 

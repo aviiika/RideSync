@@ -235,29 +235,27 @@ Three routes, all **inside the VIT Vellore campus**, defined in
 
 | Route | Name | Stops | Serves | End of route |
 | --- | --- | --- | --- | --- |
-| `ROUTE-A` | Campus Ring | 8 | The whole campus, both hostel zones | Loops |
-| `ROUTE-B` | Men's Hostel Shuttle | 5 | Men's hostels → academic blocks | Reverses |
-| `ROUTE-C` | Ladies Hostel Shuttle | 5 | Ladies hostels → academic blocks | Reverses |
+| `ROUTE-MH` | Main Gate - Men's Hostel | 14 | Every men's hostel block, via the academic blocks | Reverses |
+| `ROUTE-LH` | Main Gate - Ladies Hostel | 8 | Ladies Hostel A, F, G and S blocks | Reverses |
+| `ROUTE-AC` | Academic Block Circuit | 9 | Main Building, Library, Anna Auditorium, PRP, CDMM, TT, MGR, SJT, SMV | Loops |
 
-Stops cover the Main Gate, Main Building, Anna Auditorium, Technology Tower,
-SJT Block, the Health Centre, the Men's Hostel mess and Q Block, and the
-Ladies Hostel A and D blocks.
+Thirty-one stops across the three routes. Routes are named for the journey they
+make, so a shuttle announces where it is going: *"Main Gate - Men's Hostel 2"*.
 
 Coordinates are hand-placed approximations of the campus roads, accurate enough
 to read as the real place but not surveyed. They are easy to correct: every
 position lives in those three JSON files, and the map frames and fences itself
 to whatever the data says, so moving a stop moves the map with it.
 
-Two shuttles run on each route by default, spaced evenly so the demo opens
-with a plausible headway. To change the network, edit or add a JSON file in
-`data/routes/` — the loader validates geometry, stop ordering and coordinate
-ranges on startup.
-
 ## Where you are standing
 
 Every ETA on screen is relative to one point. By default that is the Main Gate,
 but it can be moved:
 
+- **Search** — type a campus place ("PRP", "hostel", "MGR") and pick it. There
+  is no geocoder behind this and there does not need to be: a campus has a
+  known list of places, and searching the stops the service actually calls at
+  cannot return somewhere no shuttle goes.
 - **Set on map** — tap anywhere on campus to stand there
 - **Use my device location** — asks the browser, and refuses a fix outside
   campus rather than producing ETAs that cannot apply
@@ -265,6 +263,10 @@ but it can be moved:
 
 The chosen spot is remembered across reloads, so a demo that has been set up
 stays set up. Moving it recomputes the nearest stop, every ETA and the ranking.
+
+Shuttles are then grouped by distance - **Nearby (within 400 m)** and **Further
+away** - while staying ordered by arrival inside each group. Distance is what
+you glance at; arrival is what decides the answer.
 
 ## Is it worth waiting?
 

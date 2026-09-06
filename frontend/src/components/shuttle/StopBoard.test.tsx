@@ -10,7 +10,7 @@ const stop = route.stops[0]!;
 
 const second: ShuttleSnapshot = {
   ...snapshot,
-  shuttle: { ...snapshot.shuttle, id: 'ROUTE-A-02', name: 'Campus Ring 2' },
+  shuttle: { ...snapshot.shuttle, id: 'ROUTE-AC-02', name: 'Academic Block Circuit 2' },
   eta: { ...snapshot.eta!, minutes: 9 },
 };
 
@@ -27,7 +27,7 @@ describe('StopBoard', () => {
       />,
     );
 
-    expect(screen.getByText('Main Gate')).toBeInTheDocument();
+    expect(screen.getByText('Main Building')).toBeInTheDocument();
     expect(screen.getByText(/departures/i)).toBeInTheDocument();
   });
 
@@ -43,8 +43,8 @@ describe('StopBoard', () => {
       />,
     );
 
-    expect(screen.getByText('Campus Ring 1')).toBeInTheDocument();
-    expect(screen.getByText('Campus Ring 2')).toBeInTheDocument();
+    expect(screen.getByText('Academic Block Circuit 1')).toBeInTheDocument();
+    expect(screen.getByText('Academic Block Circuit 2')).toBeInTheDocument();
   });
 
   it('opens a shuttle when one is picked', async () => {
@@ -60,8 +60,8 @@ describe('StopBoard', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /campus ring 1/i }));
-    expect(onSelectShuttle).toHaveBeenCalledWith('ROUTE-A-01');
+    await userEvent.click(screen.getByRole('button', { name: /academic block circuit 1/i }));
+    expect(onSelectShuttle).toHaveBeenCalledWith('ROUTE-AC-01');
   });
 
   it('flags a shuttle that is running late', () => {

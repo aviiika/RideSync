@@ -396,6 +396,10 @@ and is stubbed; its logic lives in pure functions that are tested directly.
 | Map bounds derived from route data | Editing the network moves the map with it |
 | Rider position in its own store | It changes when a person moves, not twice a second; mixing it with telemetry would wake every ETA subscriber on every frame |
 | A device fix outside campus is refused | Campus ETAs cannot apply from three kilometres away; a wrong answer is worse than no answer |
+| Place search over stops, not a geocoder | A campus has a finite list of places, and free-text search could return somewhere no shuttle goes |
+| Shuttles grouped by distance, ordered by arrival | Distance is what a rider glances at; arrival is what decides. Grouping never reorders within a group |
+| Bus icon drawn top-down, not side-on | The marker rotates with heading; a side view would be upside down half the time |
+| Test files run one at a time | Eleven parallel jsdom environments on this path produced worker-spawn failures and timeouts that looked like test failures |
 | Stop boards filter by route, not proximity | Only a shuttle whose route calls here can ever arrive, however near anything else is |
 | The recommendation accounts for the walk | Telling someone to run for a bus they cannot catch is worse than telling them nothing |
 | Confidence is a band with a reason, not a percentage | There is no error distribution behind it; a number would imply one |
@@ -414,8 +418,10 @@ Stated plainly rather than discovered later.
 
 - Route geometry is hand-placed approximation of campus roads, not surveyed and
   not road-matched.
-- No persistence. A backend restart reseeds the world; no trip history exists,
-  which is also why no model can be trained yet.
+- A backend restart reseeds the world. Trip history survives in the database,
+  but live positions do not: the simulation always restarts from the seed.
+- Historical trips are recorded but cannot be replayed. The rows exist; there
+  is no way to watch a past run.
 - No authentication, no rate limiting. The API is open by design for a local
   demo and is not deployable as-is.
 - Occupancy is a seeded random value with no dynamics. It is decoration.
