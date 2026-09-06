@@ -20,11 +20,15 @@ is, which way it is heading, when it arrives, and whether waiting is worthwhile.
 | 2 | Skeleton — backend, frontend, seed data, docs | Done |
 | 3 | Live map: geospatial, simulation, ETA, recommendation, WebSocket, demo controls | Done |
 | 4 | Makefile, CI workflow, architecture document | Done |
-| 5 | Pitch polish and demo script | Next |
+| 5 | Route filtering, live header, demo script | Done |
 
 ---
 
 ## Architecture
+
+[`docs/demo-script.md`](docs/demo-script.md) is the three-minute pitch
+run-through, with the exact clicks, what to say, the questions to expect and
+what to do when something breaks on stage.
 
 [`docs/architecture.md`](docs/architecture.md) is the full design document —
 module boundaries, why position is stored as a distance along a route, why

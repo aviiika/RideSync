@@ -10,6 +10,7 @@ beforeEach(() => {
     simulation: null,
     connection: 'connecting',
     selectedShuttleId: null,
+    routeFilter: null,
     lastUpdateAt: null,
   });
 });
@@ -68,5 +69,39 @@ describe('isTelemetryStale', () => {
   it('goes stale once frames stop arriving', () => {
     const now = 1_000_000;
     expect(isTelemetryStale(now, now + STALE_AFTER_MS + 1)).toBe(true);
+  });
+});
+
+describe('route filter', () => {
+  it('narrows to one route', () => {
+    useShuttleStore.getState().setRouteFilter('ROUTE-B');
+    expect(useShuttleStore.getState().routeFilter).toBe('ROUTE-B');
+  });
+
+  it('keeps a selection that is still on the visible route', () => {
+    const store = useShuttleStore.getState();
+    store.applyShuttles([shuttle]);
+    store.selectShuttle(shuttle.id);
+
+    useShuttleStore.getState().setRouteFilter(shuttle.route_id);
+    expect(useShuttleStore.getState().selectedShuttleId).toBe(shuttle.id);
+  });
+
+  it('drops a selection the filter would hide', () => {
+    const store = useShuttleStore.getState();
+    store.applyShuttles([shuttle]);
+    store.selectShuttle(shuttle.id);
+
+    useShuttleStore.getState().setRouteFilter('ROUTE-Z');
+    expect(useShuttleStore.getState().selectedShuttleId).toBeNull();
+  });
+
+  it('keeps the selection when the filter is cleared', () => {
+    const store = useShuttleStore.getState();
+    store.applyShuttles([shuttle]);
+    store.selectShuttle(shuttle.id);
+
+    useShuttleStore.getState().setRouteFilter(null);
+    expect(useShuttleStore.getState().selectedShuttleId).toBe(shuttle.id);
   });
 });

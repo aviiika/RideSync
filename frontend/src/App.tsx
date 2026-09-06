@@ -18,6 +18,7 @@ import { EtaBadge } from './components/shuttle/EtaBadge';
 import { useNearbyShuttles, useRoutes } from './hooks/useNetwork';
 import { useShuttleStream } from './hooks/useShuttleStream';
 import { isTelemetryStale, useShuttleStore } from './stores/shuttleStore';
+import type { ConnectionStatus } from './types/ws';
 import { formatDistance } from './utils/format';
 
 /**
@@ -40,19 +41,29 @@ export function App() {
   const lastUpdateAt = useShuttleStore((state) => state.lastUpdateAt);
   const selectedId = useShuttleStore((state) => state.selectedShuttleId);
   const selectShuttle = useShuttleStore((state) => state.selectShuttle);
+  const routeFilter = useShuttleStore((state) => state.routeFilter);
+  const setRouteFilter = useShuttleStore((state) => state.setRouteFilter);
   const liveShuttle = useShuttleStore((state) =>
     selectedId ? state.shuttles[selectedId] : undefined,
   );
 
   const stale = useStaleTelemetry(lastUpdateAt);
 
-  const snapshots = nearby.data ?? [];
+  // The panel honours the same filter as the map: isolating a route must not
+  // leave the list advertising a shuttle that is no longer drawn.
+  const snapshots = (nearby.data ?? []).filter(
+    (item) => !routeFilter || item.shuttle.route_id === routeFilter,
+  );
   const nearest = snapshots[0];
   const selectedSnapshot = snapshots.find((item) => item.shuttle.id === selectedId);
 
   return (
     <div className="flex h-full flex-col">
-      <Header />
+      <Header
+        connection={connection}
+        shuttleCount={simulation?.shuttle_count ?? null}
+        running={simulation?.running ?? false}
+      />
 
       <main className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <section className="relative min-h-[50vh] flex-1" aria-label="Live shuttle map">
@@ -69,7 +80,9 @@ export function App() {
             <ShuttleMap
               routes={routes.data ?? []}
               user={RIDER}
+              routeFilter={routeFilter}
               onSelectShuttle={selectShuttle}
+              onChangeRouteFilter={setRouteFilter}
             />
           )}
         </section>
@@ -146,16 +159,38 @@ export function App() {
   );
 }
 
-function Header() {
+function Header({
+  connection,
+  shuttleCount,
+  running,
+}: {
+  connection: ConnectionStatus;
+  shuttleCount: number | null;
+  running: boolean;
+}) {
+  const live = connection === 'connected';
+
   return (
     <header className="flex items-center justify-between gap-4 border-b border-border bg-surface px-4 py-3">
       <div className="flex items-center gap-2">
         <Bus className="h-5 w-5 text-brand" aria-hidden="true" />
         <div>
           <h1 className="text-base font-semibold leading-tight">RideSync</h1>
-          <p className="text-xs text-muted">Real-time shuttle tracking &amp; ETA simulation</p>
+          <p className="text-xs text-muted">VIT Vellore campus shuttle &middot; live ETA</p>
         </div>
       </div>
+
+      {shuttleCount !== null ? (
+        <p className="flex items-center gap-2 text-xs text-muted" role="status">
+          <span
+            className={`h-2 w-2 rounded-full ${
+              live && running ? 'animate-pulse bg-positive' : 'bg-muted'
+            }`}
+            aria-hidden="true"
+          />
+          {shuttleCount} shuttles {running ? 'in service' : 'paused'}
+        </p>
+      ) : null}
     </header>
   );
 }

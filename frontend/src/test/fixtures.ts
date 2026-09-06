@@ -4,7 +4,7 @@ import type { Route, Shuttle, ShuttleSnapshot, SimulationState } from '../types/
 
 export const route: Route = {
   id: 'ROUTE-A',
-  name: 'Main Campus Loop',
+  name: 'Campus Ring',
   color: '#2563eb',
   average_speed_kmh: 22,
   loop_mode: 'LOOP',
@@ -28,7 +28,7 @@ export const route: Route = {
 export const shuttle: Shuttle = {
   id: 'ROUTE-A-01',
   route_id: 'ROUTE-A',
-  name: 'Main Campus Loop 1',
+  name: 'Campus Ring 1',
   status: 'IN_SERVICE',
   latitude: 12.9701,
   longitude: 79.1564,
@@ -36,14 +36,14 @@ export const shuttle: Shuttle = {
   speed_kmh: 22,
   progress: 0.31,
   occupancy: 0.4,
-  next_stop_id: 'STOP-A2',
-  next_stop_name: 'Academic Block 1',
+  next_stop_id: 'STOP-A3',
+  next_stop_name: 'Anna Auditorium',
   updated_at: '2026-09-06T09:30:00Z',
 };
 
 export const snapshot: ShuttleSnapshot = {
   shuttle,
-  route_name: 'Main Campus Loop',
+  route_name: 'Campus Ring',
   route_color: '#2563eb',
   direct_distance_m: 1240,
   target_stop_id: 'STOP-A1',

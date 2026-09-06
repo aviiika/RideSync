@@ -74,7 +74,7 @@ describe('App', () => {
 
     // Anchored: /next shuttle/i would also match the "Finding your next
     // shuttle..." loading line and pass before the card has rendered.
-    expect(await screen.findByText('Main Campus Loop 1')).toBeInTheDocument();
+    expect(await screen.findByText('Campus Ring 1')).toBeInTheDocument();
     expect(screen.getByText(/^Next shuttle$/i)).toBeInTheDocument();
     expect(screen.getByText('~4')).toBeInTheDocument();
     expect(screen.getByText('Worth waiting')).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('App', () => {
     useShuttleStore.setState({ shuttles: { [shuttle.id]: shuttle }, shuttleIds: [shuttle.id] });
     renderWithProviders(<App />);
 
-    await userEvent.click(await screen.findByRole('button', { name: /main campus loop 1/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /campus ring 1/i }));
 
     expect(await screen.findByText(/route progress/i)).toBeInTheDocument();
     expect(screen.getByText('31%')).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe('App', () => {
     useShuttleStore.setState({ shuttles: { [shuttle.id]: shuttle }, shuttleIds: [shuttle.id] });
     renderWithProviders(<App />);
 
-    await userEvent.click(await screen.findByRole('button', { name: /main campus loop 1/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /campus ring 1/i }));
     await userEvent.click(screen.getByRole('button', { name: /close shuttle details/i }));
 
     expect(await screen.findByText(/^Next shuttle$/i)).toBeInTheDocument();

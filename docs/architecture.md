@@ -361,6 +361,7 @@ and is stubbed; its logic lives in pure functions that are tested directly.
 | Speed multiplier scales simulated time only | A fast demo must not become a network flood |
 | Map bounds derived from route data | Editing the network moves the map with it |
 | `optimizeDeps.exclude: ['maplibre-gl']` | Vite's optimizer breaks MapLibre's worker; the map fetches a style but never a tile |
+| Overlay setup runs on `load` *and* `styledata`, and skips what exists | With a warm cache the style can be ready before the listener attaches; relying on `load` alone left a basemap with no routes on it |
 
 ---
 
@@ -368,10 +369,6 @@ and is stubbed; its logic lives in pure functions that are tested directly.
 
 Stated plainly rather than discovered later.
 
-- **Map rendering is unverified in the development browser.** The overlay logic,
-  bounds and data are verified through tests and the API, but a stock MapLibre
-  page from a CDN fails identically in that environment, so the visual has to be
-  confirmed in a real browser.
 - Rider position is fixed at the Main Gate. No browser geolocation.
 - Route geometry is hand-placed approximation of campus roads, not surveyed and
   not road-matched.

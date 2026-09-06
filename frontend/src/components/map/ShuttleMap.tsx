@@ -24,6 +24,7 @@ import { useEffect, useRef } from 'react';
 import { env } from '../../config/env';
 import { useShuttleStore } from '../../stores/shuttleStore';
 import type { Route, Shuttle } from '../../types/domain';
+import { RouteLegend } from './RouteLegend';
 import {
   EMPTY_COLLECTION,
   LAYER_SHUTTLE_BODY,
@@ -36,6 +37,7 @@ import {
   layerSpecs,
   networkBounds,
   pointToGeoJson,
+  routeFilterExpressions,
   routesToGeoJson,
   shuttlesToGeoJson,
   stopsToGeoJson,
@@ -59,10 +61,18 @@ interface AnimatedVehicle {
 interface ShuttleMapProps {
   routes: Route[];
   user: { latitude: number; longitude: number };
+  routeFilter: string | null;
   onSelectShuttle: (shuttleId: string | null) => void;
+  onChangeRouteFilter: (routeId: string | null) => void;
 }
 
-export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
+export function ShuttleMap({
+  routes,
+  user,
+  routeFilter,
+  onSelectShuttle,
+  onChangeRouteFilter,
+}: ShuttleMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const readyRef = useRef(false);
@@ -71,11 +81,15 @@ export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
   const selectRef = useRef(onSelectShuttle);
   const routesRef = useRef<Route[]>(routes);
   const framedRef = useRef(false);
+  // Set once the map can be recentred; a no-op until then.
+  const recentreRef = useRef<() => void>(() => {});
   const userRef = useRef(user);
+  const filterRef = useRef(routeFilter);
 
   selectRef.current = onSelectShuttle;
   routesRef.current = routes;
   userRef.current = user;
+  filterRef.current = routeFilter;
   routeColorsRef.current = Object.fromEntries(routes.map((route) => [route.id, route.color]));
 
   // --- map lifecycle -------------------------------------------------------
@@ -106,6 +120,7 @@ export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
       geoJsonSource(map, SOURCE_USER)?.setData(
         pointToGeoJson(userRef.current.longitude, userRef.current.latitude),
       );
+      applyRouteFilter(map, filterRef.current);
     };
 
     /**
@@ -116,8 +131,8 @@ export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
      * data, so editing the network moves the map with it. Framing happens once;
      * after that the view belongs to the user.
      */
-    const frameNetwork = () => {
-      if (framedRef.current) {
+    const frameNetwork = (force = false) => {
+      if (framedRef.current && !force) {
         return;
       }
 
@@ -127,7 +142,7 @@ export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
       }
 
       framedRef.current = true;
-      map.fitBounds(bounds, { padding: 48, animate: false });
+      map.fitBounds(bounds, { padding: 48, animate: force });
       // A wider fence than the fit, so the edges of campus stay reachable.
       map.setMaxBounds(networkBounds(routesRef.current, 0.006));
       map.setMinZoom(Math.max(13, map.getZoom() - 1.5));
@@ -168,6 +183,7 @@ export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
       }
 
       readyRef.current = true;
+      recentreRef.current = () => frameNetwork(true);
       onReady();
     };
 
@@ -238,6 +254,14 @@ export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
     }
   }, [user.latitude, user.longitude]);
 
+  // --- route filter --------------------------------------------------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && readyRef.current) {
+      applyRouteFilter(map, routeFilter);
+    }
+  }, [routeFilter]);
+
   // --- live positions ------------------------------------------------------
   useEffect(() => {
     // Subscribing outside React is the point: a telemetry frame updates the
@@ -307,7 +331,26 @@ export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  return <div ref={containerRef} className="h-full w-full" data-testid="shuttle-map" />;
+  return (
+    <div className="relative h-full w-full">
+      <RouteLegend
+        routes={routes}
+        active={routeFilter}
+        onChange={onChangeRouteFilter}
+        onRecentre={() => recentreRef.current()}
+      />
+      <div ref={containerRef} className="h-full w-full" data-testid="shuttle-map" />
+    </div>
+  );
+}
+
+/** Show one route's lines, stops and vehicles, or the whole network. */
+function applyRouteFilter(map: MapLibreMap, routeId: string | null): void {
+  for (const [layerId, expression] of Object.entries(routeFilterExpressions(routeId))) {
+    if (map.getLayer(layerId)) {
+      map.setFilter(layerId, expression as never);
+    }
+  }
 }
 
 /** Narrow a source to a GeoJSON source, or undefined if it is not ready yet. */

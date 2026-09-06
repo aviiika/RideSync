@@ -52,7 +52,7 @@ export function stopsToGeoJson(routes: Route[]): Collection {
     route.stops.map((stop: Stop) => ({
       type: 'Feature' as const,
       id: stop.id,
-      properties: { id: stop.id, name: stop.name, color: route.color },
+      properties: { id: stop.id, name: stop.name, color: route.color, route_id: route.id },
       geometry: { type: 'Point' as const, coordinates: [stop.longitude, stop.latitude] },
     })),
   );
@@ -74,6 +74,7 @@ export function shuttlesToGeoJson(
       properties: {
         id: shuttle.id,
         name: shuttle.name,
+        route_id: shuttle.route_id,
         heading: shuttle.heading,
         color: routeColors[shuttle.route_id] ?? '#2563eb',
         selected: shuttle.id === selectedId,
@@ -261,4 +262,37 @@ export function networkBounds(
     [west - padding, south - padding],
     [east + padding, north + padding],
   ];
+}
+
+/**
+ * Show one route, or all of them.
+ *
+ * Filtering happens in the layer rather than by rebuilding the sources, so
+ * isolating a route during a demo costs nothing and the animation loop keeps
+ * feeding every vehicle regardless of what is currently visible.
+ */
+export function routeFilterExpressions(routeId: string | null): Record<string, unknown> {
+  if (routeId === null) {
+    return {
+      [LAYER_ROUTE_CASING]: null,
+      [LAYER_ROUTE_LINE]: null,
+      [LAYER_STOP]: null,
+      [LAYER_STOP_LABEL]: null,
+      [LAYER_SHUTTLE_BODY]: null,
+      [LAYER_SHUTTLE_ARROW]: null,
+      [LAYER_SHUTTLE_HALO]: ['==', ['get', 'selected'], true],
+    };
+  }
+
+  const onRoute = ['==', ['get', 'route_id'], routeId];
+
+  return {
+    [LAYER_ROUTE_CASING]: ['==', ['get', 'id'], routeId],
+    [LAYER_ROUTE_LINE]: ['==', ['get', 'id'], routeId],
+    [LAYER_STOP]: onRoute,
+    [LAYER_STOP_LABEL]: onRoute,
+    [LAYER_SHUTTLE_BODY]: onRoute,
+    [LAYER_SHUTTLE_ARROW]: onRoute,
+    [LAYER_SHUTTLE_HALO]: ['all', ['==', ['get', 'selected'], true], onRoute],
+  };
 }

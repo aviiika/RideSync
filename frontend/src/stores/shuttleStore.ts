@@ -22,6 +22,8 @@ interface ShuttleStore {
   simulation: SimulationState | null;
   connection: ConnectionStatus;
   selectedShuttleId: string | null;
+  /** Route the view is narrowed to, or null for the whole network. */
+  routeFilter: string | null;
   /** Wall-clock time of the last telemetry frame. */
   lastUpdateAt: number | null;
 
@@ -29,6 +31,7 @@ interface ShuttleStore {
   applySimulation: (state: SimulationState) => void;
   setConnection: (status: ConnectionStatus) => void;
   selectShuttle: (shuttleId: string | null) => void;
+  setRouteFilter: (routeId: string | null) => void;
 }
 
 export const useShuttleStore = create<ShuttleStore>((set) => ({
@@ -37,6 +40,7 @@ export const useShuttleStore = create<ShuttleStore>((set) => ({
   simulation: null,
   connection: 'connecting',
   selectedShuttleId: null,
+  routeFilter: null,
   lastUpdateAt: null,
 
   applyShuttles: (incoming) =>
@@ -57,6 +61,21 @@ export const useShuttleStore = create<ShuttleStore>((set) => ({
   setConnection: (connection) => set({ connection }),
 
   selectShuttle: (selectedShuttleId) => set({ selectedShuttleId }),
+
+  // Narrowing to a route clears a selection that is no longer visible, so the
+  // details panel can never describe a shuttle the map is not showing.
+  setRouteFilter: (routeId) =>
+    set((state) => {
+      const selected = state.selectedShuttleId
+        ? state.shuttles[state.selectedShuttleId]
+        : undefined;
+      const keepSelection = !routeId || (selected && selected.route_id === routeId);
+
+      return {
+        routeFilter: routeId,
+        selectedShuttleId: keepSelection ? state.selectedShuttleId : null,
+      };
+    }),
 }));
 
 /** True when the last frame is old enough that positions should not be trusted. */

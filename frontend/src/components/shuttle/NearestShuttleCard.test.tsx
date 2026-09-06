@@ -19,7 +19,7 @@ describe('NearestShuttleCard', () => {
 
     expect(screen.getByText('1.2 km')).toBeInTheDocument();
     expect(screen.getByText('Main Gate')).toBeInTheDocument();
-    expect(screen.getByText(/heading toward academic block 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/heading toward anna auditorium/i)).toBeInTheDocument();
   });
 
   it('shows the recommendation', () => {
