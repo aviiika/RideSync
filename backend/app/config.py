@@ -6,9 +6,10 @@ All environment-specific values are read from the environment (or a local
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 # backend/app/config.py -> backend/app -> backend -> repository root
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -30,7 +31,13 @@ class Settings(BaseSettings):
     data_dir: Path = REPO_ROOT / "data"
 
     #: Origins permitted to call the API and open the WebSocket.
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
+    #:
+    #: ``NoDecode`` stops pydantic-settings from trying to JSON-decode the raw
+    #: value, so a plain comma-separated ``CORS_ORIGINS=a,b`` in .env reaches
+    #: the validator below instead of raising a JSON error.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["http://localhost:5173"]
+    )
 
     #: Simulation tick interval in milliseconds (spec recommends 250-1000).
     simulation_tick_ms: int = Field(default=500, ge=100, le=5000)
