@@ -1,22 +1,27 @@
 {
   "id": "ROUTE-C",
-  "name": "Katpadi Station Express",
-  "color": "#f97316",
-  "average_speed_kmh": 32,
+  "name": "Ladies Hostel Shuttle",
+  "color": "#db2777",
+  "average_speed_kmh": 15,
   "loop_mode": "REVERSE",
   "geometry": [
-    [79.15590, 12.96950],
-    [79.15750, 12.96900],
-    [79.15980, 12.96830],
-    [79.16250, 12.96790],
-    [79.16550, 12.96830],
-    [79.16900, 12.96900],
-    [79.17200, 12.97050]
+    [79.16150, 12.96760],
+    [79.16090, 12.96800],
+    [79.16000, 12.96840],
+    [79.15900, 12.96885],
+    [79.15990, 12.96930],
+    [79.16060, 12.96990],
+    [79.16120, 12.97060],
+    [79.16095, 12.97140],
+    [79.16000, 12.97160],
+    [79.15900, 12.97180],
+    [79.15825, 12.97205]
   ],
   "stops": [
-    { "id": "STOP-C1", "name": "Main Gate",           "sequence": 0, "geometry_index": 0, "latitude": 12.96950, "longitude": 79.15590 },
-    { "id": "STOP-C2", "name": "Chittoor Road",       "sequence": 1, "geometry_index": 2, "latitude": 12.96830, "longitude": 79.15980 },
-    { "id": "STOP-C3", "name": "Katpadi Junction",    "sequence": 2, "geometry_index": 4, "latitude": 12.96830, "longitude": 79.16550 },
-    { "id": "STOP-C4", "name": "Katpadi Rly Station", "sequence": 3, "geometry_index": 6, "latitude": 12.97050, "longitude": 79.17200 }
+    { "id": "STOP-C1", "name": "Ladies Hostel D Block", "sequence": 0, "geometry_index": 0,  "latitude": 12.96760, "longitude": 79.16150 },
+    { "id": "STOP-C2", "name": "Ladies Hostel A Block", "sequence": 1, "geometry_index": 2,  "latitude": 12.96840, "longitude": 79.16000 },
+    { "id": "STOP-C3", "name": "SJT Block",             "sequence": 2, "geometry_index": 5,  "latitude": 12.96990, "longitude": 79.16060 },
+    { "id": "STOP-C4", "name": "Technology Tower",      "sequence": 3, "geometry_index": 7,  "latitude": 12.97140, "longitude": 79.16095 },
+    { "id": "STOP-C5", "name": "Health Centre",         "sequence": 4, "geometry_index": 10, "latitude": 12.97205, "longitude": 79.15825 }
   ]
 }

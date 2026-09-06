@@ -247,3 +247,25 @@ class TestDeterminism:
             return [round(s.distance_m, 6) for s in sorted(engine.shuttles, key=lambda s: s.id)]
 
         assert run(42) != run(99)
+
+
+def test_shuttles_never_leave_campus(repository) -> None:
+    """Whatever the route does, no vehicle may end up off campus."""
+    from tests.test_repository import (
+        CAMPUS_EAST,
+        CAMPUS_NORTH,
+        CAMPUS_SOUTH,
+        CAMPUS_WEST,
+    )
+
+    engine = SimulationEngine(
+        repository.list_routes(), SimulationConfig(shuttles_per_route=3, seed=11)
+    )
+    engine.start()
+    engine.set_speed(5.0)
+
+    for _ in range(1200):
+        engine.tick(1.0)
+        for shuttle in engine.shuttles:
+            assert CAMPUS_SOUTH <= shuttle.position.latitude <= CAMPUS_NORTH
+            assert CAMPUS_WEST <= shuttle.position.longitude <= CAMPUS_EAST

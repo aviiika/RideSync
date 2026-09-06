@@ -103,3 +103,38 @@ def test_geojson_round_trip() -> None:
     assert point.latitude == 12.9698
     assert point.longitude == 79.1552
     assert point.to_geojson() == [79.1552, 12.9698]
+
+
+# The VIT Vellore campus, generously bounded. The service is a closed campus
+# network: a route or a shuttle outside this box is a bug, not a feature.
+CAMPUS_SOUTH, CAMPUS_NORTH = 12.9650, 12.9760
+CAMPUS_WEST, CAMPUS_EAST = 79.1540, 79.1625
+
+
+def test_every_route_stays_inside_campus(repository: JsonRouteRepository) -> None:
+    for route in repository.list_routes():
+        for point in route.geometry:
+            assert CAMPUS_SOUTH <= point.latitude <= CAMPUS_NORTH, (
+                f"{route.id} leaves campus at latitude {point.latitude}"
+            )
+            assert CAMPUS_WEST <= point.longitude <= CAMPUS_EAST, (
+                f"{route.id} leaves campus at longitude {point.longitude}"
+            )
+
+
+def test_every_stop_is_inside_campus(repository: JsonRouteRepository) -> None:
+    for stop in repository.list_stops():
+        assert CAMPUS_SOUTH <= stop.position.latitude <= CAMPUS_NORTH
+        assert CAMPUS_WEST <= stop.position.longitude <= CAMPUS_EAST
+
+
+def test_the_network_serves_academic_blocks_and_both_hostel_zones(
+    repository: JsonRouteRepository,
+) -> None:
+    """The service exists to connect hostels to classes; assert it does."""
+    names = " | ".join(stop.name.lower() for stop in repository.list_stops())
+
+    assert "men's hostel" in names
+    assert "ladies hostel" in names
+    for academic in ("main building", "technology tower", "sjt block", "anna auditorium"):
+        assert academic in names, f"no stop serves {academic}"

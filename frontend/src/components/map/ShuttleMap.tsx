@@ -34,6 +34,7 @@ import {
   SOURCE_USER,
   createArrowImage,
   layerSpecs,
+  networkBounds,
   pointToGeoJson,
   routesToGeoJson,
   shuttlesToGeoJson,
@@ -69,6 +70,7 @@ export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
   const routeColorsRef = useRef<Record<string, string>>({});
   const selectRef = useRef(onSelectShuttle);
   const routesRef = useRef<Route[]>(routes);
+  const framedRef = useRef(false);
   const userRef = useRef(user);
 
   selectRef.current = onSelectShuttle;
@@ -99,10 +101,36 @@ export function ShuttleMap({ routes, user, onSelectShuttle }: ShuttleMapProps) {
       if (routesRef.current.length > 0) {
         geoJsonSource(map, SOURCE_ROUTES)?.setData(routesToGeoJson(routesRef.current));
         geoJsonSource(map, SOURCE_STOPS)?.setData(stopsToGeoJson(routesRef.current));
+        frameNetwork();
       }
       geoJsonSource(map, SOURCE_USER)?.setData(
         pointToGeoJson(userRef.current.longitude, userRef.current.latitude),
       );
+    };
+
+    /**
+     * Fit the view to the campus and fence the map to it.
+     *
+     * The service is a closed campus network, so panning off to the next town
+     * is never useful - it just loses the shuttles. Bounds come from the route
+     * data, so editing the network moves the map with it. Framing happens once;
+     * after that the view belongs to the user.
+     */
+    const frameNetwork = () => {
+      if (framedRef.current) {
+        return;
+      }
+
+      const bounds = networkBounds(routesRef.current);
+      if (!bounds) {
+        return;
+      }
+
+      framedRef.current = true;
+      map.fitBounds(bounds, { padding: 48, animate: false });
+      // A wider fence than the fit, so the edges of campus stay reachable.
+      map.setMaxBounds(networkBounds(routesRef.current, 0.006));
+      map.setMinZoom(Math.max(13, map.getZoom() - 1.5));
     };
 
     // Overlay setup is idempotent and driven from more than one event.

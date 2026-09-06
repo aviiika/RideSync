@@ -23,11 +23,11 @@ import { formatDistance } from './utils/format';
 /**
  * The rider's position.
  *
- * Fixed at the campus Main Gate for the demo. Real geolocation is a browser
- * permission prompt away, but a pitch should not open with a dialog, and a
- * fixed position keeps the run repeatable.
+ * Fixed at the VIT Vellore Main Gate for the demo. Real geolocation is a
+ * browser permission prompt away, but a pitch should not open with a dialog,
+ * and a fixed position keeps the run repeatable.
  */
-const RIDER = { latitude: 12.9695, longitude: 79.1559 };
+const RIDER = { latitude: 12.9692, longitude: 79.1554 };
 
 export function App() {
   useShuttleStream();

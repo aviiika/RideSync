@@ -194,13 +194,23 @@ hard-coded, and `.env` is gitignored.
 
 ## Demo data
 
-Three routes around the VIT Vellore campus, defined in `data/routes/`:
+Three routes, all **inside the VIT Vellore campus**, defined in
+`data/routes/`. Nothing leaves the gates:
 
-| Route | Name | Stops | Behaviour at the end |
-| --- | --- | --- | --- |
-| `ROUTE-A` | Main Campus Loop | 6 | Loops |
-| `ROUTE-B` | North Hostel Shuttle | 5 | Reverses |
-| `ROUTE-C` | Katpadi Station Express | 4 | Reverses |
+| Route | Name | Stops | Serves | End of route |
+| --- | --- | --- | --- | --- |
+| `ROUTE-A` | Campus Ring | 8 | The whole campus, both hostel zones | Loops |
+| `ROUTE-B` | Men's Hostel Shuttle | 5 | Men's hostels → academic blocks | Reverses |
+| `ROUTE-C` | Ladies Hostel Shuttle | 5 | Ladies hostels → academic blocks | Reverses |
+
+Stops cover the Main Gate, Main Building, Anna Auditorium, Technology Tower,
+SJT Block, the Health Centre, the Men's Hostel mess and Q Block, and the
+Ladies Hostel A and D blocks.
+
+Coordinates are hand-placed approximations of the campus roads, accurate enough
+to read as the real place but not surveyed. They are easy to correct: every
+position lives in those three JSON files, and the map frames and fences itself
+to whatever the data says, so moving a stop moves the map with it.
 
 Two shuttles run on each route by default, spaced evenly so the demo opens
 with a plausible headway. To change the network, edit or add a JSON file in

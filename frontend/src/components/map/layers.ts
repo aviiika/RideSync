@@ -229,3 +229,36 @@ export function layerSpecs(): LayerSpecification[] {
     },
   ];
 }
+/**
+ * Bounding box of the whole route network, as `[[west, south], [east, north]]`.
+ *
+ * Derived from the data rather than hard-coded, so editing `data/routes/*.json`
+ * moves the map with it. `padding` is in degrees and keeps markers near the
+ * edge of the network from sitting flush against the viewport.
+ */
+export function networkBounds(
+  routes: Route[],
+  padding = 0.0015,
+): [[number, number], [number, number]] | null {
+  const positions = routes.flatMap((route) => route.geometry);
+  if (positions.length === 0) {
+    return null;
+  }
+
+  let west = Number.POSITIVE_INFINITY;
+  let south = Number.POSITIVE_INFINITY;
+  let east = Number.NEGATIVE_INFINITY;
+  let north = Number.NEGATIVE_INFINITY;
+
+  for (const [longitude, latitude] of positions) {
+    west = Math.min(west, longitude);
+    east = Math.max(east, longitude);
+    south = Math.min(south, latitude);
+    north = Math.max(north, latitude);
+  }
+
+  return [
+    [west - padding, south - padding],
+    [east + padding, north + padding],
+  ];
+}
