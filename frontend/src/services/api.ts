@@ -11,6 +11,7 @@ import type {
   EtaAccuracy,
   Health,
   Route,
+  Session,
   Shuttle,
   ShuttleSnapshot,
   SimulationState,
@@ -45,7 +46,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    throw new ApiError(`Request to ${path} failed (${response.status})`, response.status);
+    // Prefer the server's own message: it is written for the user, whereas a
+    // status code is not.
+    const detail = await readDetail(response);
+    throw new ApiError(
+      detail ?? `Request to ${path} failed (${response.status})`,
+      response.status,
+    );
   }
 
   return (await response.json()) as T;
@@ -63,7 +70,23 @@ function riderQuery(latitude: number, longitude: number): string {
   return `latitude=${latitude}&longitude=${longitude}`;
 }
 
+/** Pull `detail` out of a FastAPI error body, if there is one. */
+async function readDetail(response: Response): Promise<string | null> {
+  try {
+    const body = (await response.clone().json()) as { detail?: unknown };
+    return typeof body.detail === 'string' ? body.detail : null;
+  } catch {
+    return null;
+  }
+}
+
 export const api = {
+  login: (registrationNumber: string, password: string) =>
+    post<Session>('/auth/login', {
+      registration_number: registrationNumber,
+      password,
+    }),
+
   health: () => request<Health>('/health'),
   listRoutes: () => request<Route[]>('/routes'),
   getRoute: (routeId: string) => request<Route>(`/routes/${encodeURIComponent(routeId)}`),

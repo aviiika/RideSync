@@ -2,10 +2,11 @@
 
 from fastapi import APIRouter
 
-from app.api import health, metrics, routes, shuttles, simulation, stops, ws
+from app.api import auth, health, metrics, routes, shuttles, simulation, stops, ws
 
 api_router = APIRouter()
 api_router.include_router(health.router)
+api_router.include_router(auth.router)
 api_router.include_router(routes.router)
 api_router.include_router(stops.router)
 api_router.include_router(shuttles.router)

@@ -135,6 +135,13 @@ export interface SimulationState {
   seed: number;
 }
 
+/** A signed-in student. The token is signed and expiring, server-side. */
+export interface Session {
+  registration_number: string;
+  token: string;
+  expires_at: string;
+}
+
 export interface Health {
   status: string;
   version: string;

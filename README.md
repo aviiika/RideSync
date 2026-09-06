@@ -181,6 +181,8 @@ Windows, and every target maps to a command documented above.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
+| POST | `/auth/login` | Sign in with a registration number |
+| GET | `/auth/me` | Confirm a stored session is still valid |
 | GET | `/health` | Liveness plus the number of routes loaded |
 | GET | `/routes` | Every route with geometry and stops |
 | GET | `/routes/{route_id}` | One route |
@@ -221,6 +223,8 @@ hard-coded, and `.env` is gitignored.
 | `ETA_DELAY_FACTOR` | Multiplier padding ETAs for traffic and boarding |
 | `VITE_API_URL` | REST base URL for the browser |
 | `VITE_WS_URL` | WebSocket URL for live telemetry |
+| `AUTH_SECRET` | Signing key for session tokens |
+| `SESSION_HOURS` | How long a sign-in lasts |
 | `WALKING_SPEED_KMH` | Pace used to decide whether a stop is reachable in time |
 | `DATABASE_URL` | Trip history (SQLite; the file is gitignored) |
 | `HISTORY_ENABLED` | Turn history recording off entirely |
@@ -246,6 +250,22 @@ Coordinates are hand-placed approximations of the campus roads, accurate enough
 to read as the real place but not surveyed. They are easy to correct: every
 position lives in those three JSON files, and the map frames and fences itself
 to whatever the data says, so moving a stop moves the map with it.
+
+## Signing in
+
+The app opens on a sign-in page. Enter your registration number — for example
+`24MID0159` — and **your password is your registration number**. The page says
+so, so nobody is left guessing.
+
+> **This identifies you; it does not authenticate you.** Anyone who knows a
+> registration number can sign in as that student. It exists so the app can
+> greet you and remember where you wait, not to protect anything — the shuttle
+> data is the same for everyone, and the API endpoints are deliberately not
+> gated behind it.
+
+What is done properly: the number's shape is validated, and the session token is
+HMAC-signed with an expiry, so a session cannot be forged or extended by editing
+browser storage. Set `AUTH_SECRET` anywhere that matters.
 
 ## Where you are standing
 

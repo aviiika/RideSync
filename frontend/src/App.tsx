@@ -6,9 +6,10 @@
  * backend, and no business logic lives here.
  */
 
-import { AlertTriangle, Bus, ChevronDown, Loader2 } from 'lucide-react';
+import { AlertTriangle, Bus, ChevronDown, Loader2, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { LoginPage } from './components/auth/LoginPage';
 import { ConnectionBanner } from './components/common/ConnectionBanner';
 import { ShuttleMap } from './components/map/ShuttleMap';
 import { SimulationControls } from './components/simulation/SimulationControls';
@@ -19,6 +20,7 @@ import { ShuttleDetailsPanel } from './components/shuttle/ShuttleDetailsPanel';
 import { EtaBadge } from './components/shuttle/EtaBadge';
 import {
   useEtaAccuracy,
+  useLogin,
   useNearbyShuttles,
   useRoutes,
   useSimulationControls,
@@ -27,6 +29,7 @@ import {
 import { useShuttleStream } from './hooks/useShuttleStream';
 import { isTelemetryStale, useShuttleStore } from './stores/shuttleStore';
 import type { ShuttleSnapshot } from './types/domain';
+import { useAuthStore } from './stores/authStore';
 import { describeRiderSource, useRiderStore } from './stores/riderStore';
 import type { ConnectionStatus } from './types/ws';
 import { formatDistance } from './utils/format';
@@ -40,6 +43,30 @@ import { formatDistance } from './utils/format';
 const NEAR_DISTANCE_M = 400;
 
 export function App() {
+  const registrationNumber = useAuthStore((state) => state.registrationNumber);
+
+  // Everything below the sign-in - including the telemetry socket - is only
+  // mounted once there is a session, so a signed-out page opens no connections.
+  if (registrationNumber === null) {
+    return <SignIn />;
+  }
+
+  return <ShuttleApp registrationNumber={registrationNumber} />;
+}
+
+function SignIn() {
+  const login = useLogin();
+
+  return (
+    <LoginPage
+      onSubmit={(registration, password) => login.mutate({ registration, password })}
+      pending={login.isPending}
+      error={login.isError ? login.error.message : null}
+    />
+  );
+}
+
+function ShuttleApp({ registrationNumber }: { registrationNumber: string }) {
   useShuttleStream();
 
   // The rider starts at the Main Gate and can be moved from the map. A pitch
@@ -95,6 +122,7 @@ export function App() {
         connection={connection}
         shuttleCount={simulation?.shuttle_count ?? null}
         running={simulation?.running ?? false}
+        registrationNumber={registrationNumber}
       />
 
       <main className="flex min-h-0 flex-1 flex-col lg:flex-row">
@@ -313,12 +341,15 @@ function Header({
   connection,
   shuttleCount,
   running,
+  registrationNumber,
 }: {
   connection: ConnectionStatus;
   shuttleCount: number | null;
   running: boolean;
+  registrationNumber: string;
 }) {
   const live = connection === 'connected';
+  const signOut = useAuthStore((state) => state.signOut);
 
   return (
     <header className="flex items-center justify-between gap-4 border-b border-border bg-surface px-4 py-3">
@@ -330,17 +361,31 @@ function Header({
         </div>
       </div>
 
-      {shuttleCount !== null ? (
-        <p className="flex items-center gap-2 text-xs text-muted" role="status">
-          <span
-            className={`h-2 w-2 rounded-full ${
-              live && running ? 'animate-pulse bg-positive' : 'bg-muted'
-            }`}
-            aria-hidden="true"
-          />
-          {shuttleCount} shuttles {running ? 'in service' : 'paused'}
-        </p>
-      ) : null}
+      <div className="flex items-center gap-3">
+        {shuttleCount !== null ? (
+          <p className="hidden items-center gap-2 text-xs text-muted sm:flex" role="status">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                live && running ? 'animate-pulse bg-positive' : 'bg-muted'
+              }`}
+              aria-hidden="true"
+            />
+            {shuttleCount} shuttles {running ? 'in service' : 'paused'}
+          </p>
+        ) : null}
+
+        <span className="text-xs font-medium">{registrationNumber}</span>
+
+        <button
+          type="button"
+          onClick={signOut}
+          title="Sign out"
+          aria-label="Sign out"
+          className="rounded-full p-1.5 text-muted transition hover:bg-surface-muted hover:text-ink"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+      </div>
     </header>
   );
 }

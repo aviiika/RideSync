@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
+import { useAuthStore } from './stores/authStore';
 import { useShuttleStore } from './stores/shuttleStore';
 import { route, shuttle, snapshot } from './test/fixtures';
 import { renderWithProviders } from './test/utils';
@@ -41,6 +42,8 @@ const healthy = (path: string) => {
 };
 
 beforeEach(() => {
+  // The shell gates on a session, so every test here starts signed in.
+  useAuthStore.setState({ registrationNumber: '24MID0159', token: 'test-token' });
   useShuttleStore.setState({
     shuttles: {},
     shuttleIds: [],
@@ -177,5 +180,33 @@ describe('near and far grouping', () => {
     expect(
       within(suggestions).getByRole('button', { name: /main building/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('sign in', () => {
+  it('shows the login page when there is no session', () => {
+    useAuthStore.setState({ registrationNumber: null, token: null });
+    mockApi(healthy);
+    renderWithProviders(<App />);
+
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.queryByTestId('shuttle-map')).not.toBeInTheDocument();
+  });
+
+  it('opens the app once signed in', async () => {
+    mockApi(healthy);
+    renderWithProviders(<App />);
+
+    expect(await screen.findByTestId('shuttle-map')).toBeInTheDocument();
+    expect(screen.getByText('24MID0159')).toBeInTheDocument();
+  });
+
+  it('signs out again', async () => {
+    mockApi(healthy);
+    renderWithProviders(<App />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /sign out/i }));
+
+    expect(screen.getByRole('button', { name: /^sign in$/i })).toBeInTheDocument();
   });
 });

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '../services/api';
+import { useAuthStore } from '../stores/authStore';
 import { useShuttleStore } from '../stores/shuttleStore';
 import type { SimulationState } from '../types/domain';
 
@@ -107,5 +108,27 @@ export function useEtaAccuracy() {
     queryKey: ['eta-accuracy'],
     queryFn: api.etaAccuracy,
     refetchInterval: 15_000,
+  });
+}
+
+/**
+ * Sign in.
+ *
+ * On success the session goes straight into the auth store, which is what the
+ * shell gates on - so a successful login re-renders into the app with no
+ * navigation step.
+ */
+export function useLogin() {
+  const signIn = useAuthStore((state) => state.signIn);
+
+  return useMutation({
+    mutationFn: ({ registration, password }: { registration: string; password: string }) =>
+      api.login(registration, password),
+    onSuccess: (session) =>
+      signIn({
+        registrationNumber: session.registration_number,
+        token: session.token,
+        expiresAt: session.expires_at,
+      }),
   });
 }

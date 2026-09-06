@@ -62,6 +62,13 @@ class Settings(BaseSettings):
     #: History is observability; turn it off and nothing user-facing changes.
     history_enabled: bool = True
 
+    #: Signing key for session tokens. The default is obviously not a secret
+    #: and is fine for a local demo; set AUTH_SECRET anywhere it matters.
+    auth_secret: str = "dev-only-not-a-secret"
+
+    #: How long a sign-in lasts.
+    session_hours: int = Field(default=12, ge=1, le=720)
+
     #: Average walking speed, used to decide whether a rider can reach a stop
     #: before the shuttle does. 4.8 km/h is a normal adult pace.
     walking_speed_kmh: float = Field(default=4.8, gt=0, le=15)

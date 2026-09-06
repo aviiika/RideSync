@@ -14,6 +14,7 @@ from app.db import Database
 from app.eta import DeterministicEtaEngine, EtaConfig, EtaEngine
 from app.realtime import ConnectionManager, SimulationRunner
 from app.services import RouteService
+from app.services.auth_service import AuthService
 from app.services.history_service import HistoryService
 from app.services.shuttle_service import ShuttleService
 from app.simulation import SimulationConfig, SimulationEngine
@@ -64,6 +65,12 @@ def get_shuttle_service() -> ShuttleService:
 
 
 @lru_cache
+def get_auth_service() -> AuthService:
+    settings = get_settings()
+    return AuthService(secret=settings.auth_secret, session_hours=settings.session_hours)
+
+
+@lru_cache
 def get_database() -> Database:
     database = Database(get_settings().database_url)
     database.create_all()
@@ -100,6 +107,7 @@ def reset_dependencies() -> None:
         get_simulation_engine,
         get_eta_engine,
         get_shuttle_service,
+        get_auth_service,
         get_database,
         get_history_service,
         get_connection_manager,
