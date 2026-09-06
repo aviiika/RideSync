@@ -1,6 +1,6 @@
 /** The "should I wait?" answer. The policy lives on the server; this renders it. */
 
-import { Check, CircleHelp, Clock, TriangleAlert } from 'lucide-react';
+import { Check, CircleHelp, Clock, Footprints, TriangleAlert } from 'lucide-react';
 import type { ComponentType } from 'react';
 
 import type { Recommendation, RecommendationLevel } from '../../types/domain';
@@ -13,6 +13,7 @@ const STYLES: Record<
   WORTH_WAITING: { className: 'bg-positive/10 text-positive', Icon: Check },
   CONSIDER_WAITING: { className: 'bg-caution/15 text-caution', Icon: Clock },
   LONG_WAIT: { className: 'bg-critical/10 text-critical', Icon: TriangleAlert },
+  TOO_TIGHT: { className: 'bg-critical/10 text-critical', Icon: Footprints },
   UNAVAILABLE: { className: 'bg-surface-muted text-muted', Icon: CircleHelp },
 };
 

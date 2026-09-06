@@ -27,6 +27,14 @@ class RecommendationResponse(BaseModel):
         )
 
 
+class ConfidenceResponse(BaseModel):
+    """A heuristic band, deliberately not presented as a probability."""
+
+    level: str
+    label: str
+    reason: str
+
+
 class EtaResponse(BaseModel):
     """An arrival estimate, with the inputs it came from."""
 
@@ -36,6 +44,7 @@ class EtaResponse(BaseModel):
     effective_speed_kmh: float
     intervening_stops: int
     source: str = Field(description="Which estimator produced this.")
+    confidence: ConfidenceResponse | None = None
 
 
 class ShuttleResponse(BaseModel):
@@ -94,6 +103,13 @@ class ShuttleSnapshotResponse(BaseModel):
     target_stop_name: str | None
     eta: EtaResponse | None
     recommendation: RecommendationResponse
+    walk_seconds: float | None = Field(
+        default=None, description="Time on foot from the rider to the target stop."
+    )
+    walk_minutes: int | None = None
+    reachable: bool | None = Field(
+        default=None, description="False when the shuttle arrives before the rider can."
+    )
 
     @classmethod
     def from_domain(cls, snapshot: ShuttleSnapshot) -> ShuttleSnapshotResponse:
@@ -106,6 +122,15 @@ class ShuttleSnapshotResponse(BaseModel):
                 effective_speed_kmh=round(snapshot.eta.features.effective_speed_kmh, 1),
                 intervening_stops=snapshot.eta.features.intervening_stops,
                 source=snapshot.eta.source,
+                confidence=(
+                    ConfidenceResponse(
+                        level=snapshot.confidence.level.value,
+                        label=snapshot.confidence.label,
+                        reason=snapshot.confidence.reason,
+                    )
+                    if snapshot.confidence
+                    else None
+                ),
             )
 
         return cls(
@@ -117,4 +142,13 @@ class ShuttleSnapshotResponse(BaseModel):
             target_stop_name=snapshot.target_stop.name if snapshot.target_stop else None,
             eta=eta,
             recommendation=RecommendationResponse.from_domain(snapshot.recommendation),
+            walk_seconds=(
+                None if snapshot.walk_seconds is None else round(snapshot.walk_seconds, 1)
+            ),
+            walk_minutes=snapshot.walk_minutes,
+            reachable=(
+                None
+                if snapshot.recommendation.level.value == "UNAVAILABLE"
+                else snapshot.recommendation.level.value != "TOO_TIGHT"
+            ),
         )

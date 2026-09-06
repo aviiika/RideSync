@@ -7,7 +7,15 @@
  */
 
 import { env } from '../config/env';
-import type { Health, Route, ShuttleSnapshot, SimulationState, Stop } from '../types/domain';
+import type {
+  EtaAccuracy,
+  Health,
+  Route,
+  Shuttle,
+  ShuttleSnapshot,
+  SimulationState,
+  Stop,
+} from '../types/domain';
 
 /** A request that did not return a usable response. */
 export class ApiError extends Error {
@@ -66,11 +74,27 @@ export const api = {
   nearbyShuttles: (latitude: number, longitude: number) =>
     request<ShuttleSnapshot[]>(`/shuttles/nearby?${riderQuery(latitude, longitude)}`),
 
+  /** A departure board: what is due at one stop, soonest first. */
+  arrivalsAt: (stopId: string, latitude?: number, longitude?: number) => {
+    const path = `/stops/${encodeURIComponent(stopId)}/arrivals`;
+    const query =
+      latitude !== undefined && longitude !== undefined
+        ? `?${riderQuery(latitude, longitude)}`
+        : '';
+    return request<ShuttleSnapshot[]>(`${path}${query}`);
+  },
+
+  /** Measured ETA error. Against the simulation, and it says so. */
+  etaAccuracy: () => request<EtaAccuracy>('/metrics/eta'),
+
   simulation: {
     state: () => request<SimulationState>('/simulation'),
     start: () => post<SimulationState>('/simulation/start'),
     pause: () => post<SimulationState>('/simulation/pause'),
     reset: () => post<SimulationState>('/simulation/reset'),
     setSpeed: (multiplier: number) => post<SimulationState>('/simulation/speed', { multiplier }),
+    delay: (shuttleId: string, seconds = 90) =>
+      post<Shuttle>('/simulation/delay', { shuttle_id: shuttleId, seconds }),
+    clearDelays: () => post<SimulationState>('/simulation/clear-delays'),
   },
 };

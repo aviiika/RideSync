@@ -13,9 +13,16 @@ import { ConnectionBanner } from './components/common/ConnectionBanner';
 import { ShuttleMap } from './components/map/ShuttleMap';
 import { SimulationControls } from './components/simulation/SimulationControls';
 import { NearestShuttleCard } from './components/shuttle/NearestShuttleCard';
+import { StopBoard } from './components/shuttle/StopBoard';
 import { ShuttleDetailsPanel } from './components/shuttle/ShuttleDetailsPanel';
 import { EtaBadge } from './components/shuttle/EtaBadge';
-import { useNearbyShuttles, useRoutes } from './hooks/useNetwork';
+import {
+  useEtaAccuracy,
+  useNearbyShuttles,
+  useRoutes,
+  useSimulationControls,
+  useStopArrivals,
+} from './hooks/useNetwork';
 import { useShuttleStream } from './hooks/useShuttleStream';
 import { isTelemetryStale, useShuttleStore } from './stores/shuttleStore';
 import { useRiderStore } from './stores/riderStore';
@@ -38,11 +45,17 @@ export function App() {
   const lastUpdateAt = useShuttleStore((state) => state.lastUpdateAt);
   const selectedId = useShuttleStore((state) => state.selectedShuttleId);
   const selectShuttle = useShuttleStore((state) => state.selectShuttle);
+  const selectedStopId = useShuttleStore((state) => state.selectedStopId);
+  const selectStop = useShuttleStore((state) => state.selectStop);
   const routeFilter = useShuttleStore((state) => state.routeFilter);
   const setRouteFilter = useShuttleStore((state) => state.setRouteFilter);
   const liveShuttle = useShuttleStore((state) =>
     selectedId ? state.shuttles[selectedId] : undefined,
   );
+
+  const arrivals = useStopArrivals(selectedStopId, rider.latitude, rider.longitude);
+  const accuracy = useEtaAccuracy();
+  const { delay } = useSimulationControls();
 
   const stale = useStaleTelemetry(lastUpdateAt);
   const [sheetOpen, setSheetOpen] = useState(true);
@@ -53,6 +66,7 @@ export function App() {
     (item) => !routeFilter || item.shuttle.route_id === routeFilter,
   );
   const nearest = snapshots[0];
+  const stops = (routes.data ?? []).flatMap((route) => route.stops);
   const selectedSnapshot = snapshots.find((item) => item.shuttle.id === selectedId);
 
   return (
@@ -80,6 +94,7 @@ export function App() {
               user={rider}
               routeFilter={routeFilter}
               onSelectShuttle={selectShuttle}
+              onSelectStop={selectStop}
               onChangeRouteFilter={setRouteFilter}
             />
           )}
@@ -106,11 +121,22 @@ export function App() {
           <div className={sheetOpen ? 'contents' : 'hidden lg:contents'}>
               <ConnectionBanner status={connection} stale={stale} />
 
-            {selectedId ? (
+            {selectedStopId ? (
+              <StopBoard
+                stop={stops.find((stop) => stop.id === selectedStopId)}
+                arrivals={arrivals.data ?? []}
+                loading={arrivals.isPending}
+                error={arrivals.isError ? arrivals.error : null}
+                onSelectShuttle={selectShuttle}
+                onClose={() => selectStop(null)}
+              />
+            ) : selectedId ? (
               <ShuttleDetailsPanel
                 live={liveShuttle}
                 snapshot={selectedSnapshot}
                 onClose={() => selectShuttle(null)}
+                onInjectDelay={(shuttleId) => delay.mutate(shuttleId)}
+                delaying={delay.isPending}
               />
             ) : nearby.isPending ? (
               <p className="flex items-center gap-2 rounded-panel border border-border bg-surface p-4 text-sm text-muted">
@@ -128,6 +154,17 @@ export function App() {
             )}
 
             <SimulationControls state={simulation} />
+
+            {accuracy.data && accuracy.data.resolved_predictions > 0 ? (
+              <p className="rounded-panel border border-border bg-surface p-3 text-xs text-muted">
+                <span className="font-medium text-ink">
+                  ETA off by ~{formatErrorMinutes(accuracy.data.mean_absolute_error_seconds)} on
+                  average
+                </span>{' '}
+                over {accuracy.data.resolved_predictions} predictions scored against{' '}
+                {accuracy.data.measured_against}. Not a real-world accuracy claim.
+              </p>
+            ) : null}
 
             {snapshots.length > 1 ? (
               <section className="rounded-panel border border-border bg-surface p-3">
@@ -174,6 +211,14 @@ export function App() {
       </main>
     </div>
   );
+}
+
+/** Error in the units a person reads: seconds while small, minutes once not. */
+function formatErrorMinutes(seconds: number | null): string {
+  if (seconds === null) {
+    return '—';
+  }
+  return seconds < 90 ? `${Math.round(seconds)} s` : `${(seconds / 60).toFixed(1)} min`;
 }
 
 /** One line for the collapsed mobile sheet: the answer, without the detail. */

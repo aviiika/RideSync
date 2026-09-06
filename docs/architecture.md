@@ -266,9 +266,15 @@ duration and headway is additive.
 The target would be `actual_arrival_time − prediction_time`, evaluated with MAE,
 RMSE and median absolute error.
 
+The training set now exists in shape, if not in meaning: `predictions` rows
+carry the features an estimate was made from, and `arrivals` resolves them with
+the outcome (section 14a).
+
 **Accuracy from synthetic data would be meaningless and will not be claimed.**
 A model trained on this simulation would be learning the simulation's own
-arithmetic. Real telemetry has to come first.
+arithmetic. Real telemetry has to come first. The measured error the app
+displays is labelled "against simulated arrivals" in the API response itself,
+so it cannot be quoted out of context by accident.
 
 ---
 
@@ -298,6 +304,34 @@ This was a deliberate choice against the specification's suggested stack. For
 three routes and eighteen stops, a database is ceremony: it adds Docker to every
 run and a migration step to every demo, in exchange for nothing the JSON does
 not already do. The seam is what matters, and the seam is there.
+
+---
+
+## 14a. Trip history
+
+Two append-only SQLite tables, and the relationship between them is the point:
+
+```text
+prediction (what was promised, plus its features)
+                    |
+        arrival ----+  resolves it, and records the error
+```
+
+Every ETA the system commits to is written down; every actual arrival is
+written down; the second settles the first. That turns "the ETA looks about
+right" into a number - `/metrics/eta` reports mean absolute error, median
+absolute error and a **signed** bias, because an estimator that is habitually
+long is a different problem from one that is merely noisy.
+
+Two rules keep the measurement honest. A prediction older than thirty minutes
+is abandoned rather than matched, so a shuttle that never turned up cannot
+resolve against its next lap and record an enormous fictional error. And every
+write is wrapped: history is observability, and a locked database file must
+never take down the simulation or blank the map.
+
+SQLite rather than Postgres, and `create_all` rather than a migration tool: the
+schema is two tables owned entirely by this application, and a demo that needs
+`alembic upgrade` before it runs is a worse demo.
 
 ---
 
@@ -362,6 +396,12 @@ and is stubbed; its logic lives in pure functions that are tested directly.
 | Map bounds derived from route data | Editing the network moves the map with it |
 | Rider position in its own store | It changes when a person moves, not twice a second; mixing it with telemetry would wake every ETA subscriber on every frame |
 | A device fix outside campus is refused | Campus ETAs cannot apply from three kilometres away; a wrong answer is worse than no answer |
+| Stop boards filter by route, not proximity | Only a shuttle whose route calls here can ever arrive, however near anything else is |
+| The recommendation accounts for the walk | Telling someone to run for a bus they cannot catch is worse than telling them nothing |
+| Confidence is a band with a reason, not a percentage | There is no error distribution behind it; a number would imply one |
+| Delay injection is a demo control, not a traffic model | It exists so the delayed path can be shown rather than described |
+| History failures are swallowed and logged | Observability must never take down the product it observes |
+| Stale predictions are abandoned, not scored | A shuttle that never arrived would otherwise record a vast fictional error |
 | Mobile sheet collapses by not rendering | A `max-height` collapse silently failed to resolve; conditional rendering has no transition to race and no utility to lose a specificity fight |
 | `optimizeDeps.exclude: ['maplibre-gl']` | Vite's optimizer breaks MapLibre's worker; the map fetches a style but never a tile |
 | Overlay setup runs on `load` *and* `styledata`, and skips what exists | With a warm cache the style can be ready before the listener attaches; relying on `load` alone left a basemap with no routes on it |
@@ -379,10 +419,14 @@ Stated plainly rather than discovered later.
 - No authentication, no rate limiting. The API is open by design for a local
   demo and is not deployable as-is.
 - Occupancy is a seeded random value with no dynamics. It is decoration.
-- The rider position is a point with no walking model: "300 m away" is not
-  "four minutes' walk", and the recommendation does not account for how long it
-  takes to reach the stop.
-- `DELAYED` exists in the status vocabulary but nothing ever sets it.
+- The confidence band is a heuristic over three conditions, not a calibrated
+  interval. It says which estimates are shakier, not by how much.
+- Measured ETA error describes the estimator against the simulation. It is a
+  real measurement of a synthetic world, and worth exactly that.
+- History accumulates for the life of the database file and is never pruned or
+  aggregated; a long-running instance would grow unboundedly.
+- The walk is straight-line distance over an average pace. It ignores paths,
+  gates, stairs and rain.
 - Bundle is ~1.2 MB (332 kB gzipped), dominated by MapLibre. No code splitting.
 - Frontend tests stub the map, so map interaction — click to select, bounds
   fencing — is not covered by an automated test.

@@ -6,6 +6,11 @@ their state. That isolation is what makes it deterministic and testable, and
 what lets a real GPS feed replace it later behind the same interface.
 """
 
-from app.simulation.engine import SimulationConfig, SimulationEngine, SimulationState
+from app.simulation.engine import (
+    ArrivalEvent,
+    SimulationConfig,
+    SimulationEngine,
+    SimulationState,
+)
 
-__all__ = ["SimulationConfig", "SimulationEngine", "SimulationState"]
+__all__ = ["ArrivalEvent", "SimulationConfig", "SimulationEngine", "SimulationState"]

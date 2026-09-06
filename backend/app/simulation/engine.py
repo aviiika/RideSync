@@ -26,6 +26,9 @@ ARRIVING_THRESHOLD_M = 120.0
 #: Tolerance for "the shuttle is standing at this stop", in metres.
 _AT_STOP_TOLERANCE_M = 0.5
 
+#: Fraction of normal speed a delayed shuttle travels at.
+DELAYED_SPEED_FACTOR = 0.4
+
 
 @dataclass(frozen=True, slots=True)
 class SimulationConfig:
@@ -51,6 +54,17 @@ class SimulationState:
     started_at: datetime | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class ArrivalEvent:
+    """A shuttle reached a stop. Drained by whoever wants to record it."""
+
+    shuttle_id: str
+    route_id: str
+    stop_id: str
+    at: datetime
+    delayed: bool
+
+
 @dataclass(slots=True)
 class _Vehicle:
     """A shuttle plus the simulation-only bookkeeping the API never sees."""
@@ -74,6 +88,7 @@ class SimulationEngine:
         self._geometries = {route.id: RouteGeometry.build(route) for route in routes}
         self._state = SimulationState()
         self._vehicles: dict[str, _Vehicle] = {}
+        self._arrivals: list[ArrivalEvent] = []
         self.reset()
 
     # ------------------------------------------------------------------ state
@@ -89,6 +104,12 @@ class SimulationEngine:
     @property
     def shuttles(self) -> tuple[Shuttle, ...]:
         return tuple(vehicle.shuttle for vehicle in self._vehicles.values())
+
+    def drain_arrivals(self) -> tuple[ArrivalEvent, ...]:
+        """Take the arrivals recorded since the last call, and forget them."""
+        events = tuple(self._arrivals)
+        self._arrivals.clear()
+        return events
 
     def get_shuttle(self, shuttle_id: str) -> Shuttle | None:
         vehicle = self._vehicles.get(shuttle_id)
@@ -115,6 +136,30 @@ class SimulationEngine:
         self._state.speed_multiplier = multiplier
         return self._state
 
+    def delay_shuttle(self, shuttle_id: str, seconds: float) -> Shuttle:
+        """Slow one shuttle for a while.
+
+        A demo control, not a model of traffic: it exists so the delayed and
+        recovering paths can be shown on screen rather than explained.
+        """
+        if seconds <= 0:
+            raise ValueError("a delay must be a positive number of seconds")
+
+        vehicle = self._vehicles.get(shuttle_id)
+        if vehicle is None:
+            raise KeyError(shuttle_id)
+
+        vehicle.shuttle.delay_remaining_s = seconds
+        vehicle.shuttle.status = ShuttleStatus.DELAYED
+        return vehicle.shuttle
+
+    def clear_delays(self) -> None:
+        """Return every delayed shuttle to normal service."""
+        for vehicle in self._vehicles.values():
+            vehicle.shuttle.delay_remaining_s = 0.0
+            if vehicle.shuttle.status is ShuttleStatus.DELAYED:
+                vehicle.shuttle.status = ShuttleStatus.IN_SERVICE
+
     def reset(self) -> SimulationState:
         """Rebuild the world from the seed.
 
@@ -124,6 +169,7 @@ class SimulationEngine:
         rng = random.Random(self._config.seed)
         self._state = SimulationState()
         self._vehicles = {}
+        self._arrivals = []
 
         for route_id in sorted(self._geometries):
             geometry = self._geometries[route_id]
@@ -201,7 +247,14 @@ class SimulationEngine:
             )
             return
 
-        travel_m = vehicle.base_speed_kmh * 1000.0 / SECONDS_PER_HOUR * simulated_seconds
+        # A delayed shuttle keeps moving, just badly.
+        delayed = shuttle.delay_remaining_s > 0
+        if delayed:
+            shuttle.delay_remaining_s = max(0.0, shuttle.delay_remaining_s - simulated_seconds)
+
+        speed_kmh = vehicle.base_speed_kmh * (DELAYED_SPEED_FACTOR if delayed else 1.0)
+
+        travel_m = speed_kmh * 1000.0 / SECONDS_PER_HOUR * simulated_seconds
         if travel_m <= 0:
             return
 
@@ -210,6 +263,18 @@ class SimulationEngine:
 
         if stop_hit is not None:
             stop_index, stop_distance = stop_hit
+            stops = geometry.route.stops
+            if stop_index < len(stops):
+                self._arrivals.append(
+                    ArrivalEvent(
+                        shuttle_id=shuttle.id,
+                        route_id=shuttle.route_id,
+                        stop_id=stops[stop_index].id,
+                        at=now,
+                        delayed=delayed,
+                    )
+                )
+
             shuttle.distance_m = stop_distance
             shuttle.dwell_remaining_s = self._config.dwell_seconds
             shuttle.status = ShuttleStatus.AT_STOP
@@ -217,8 +282,8 @@ class SimulationEngine:
             shuttle.next_stop_index = stop_index
         else:
             shuttle.distance_m = self._wrap(vehicle, target)
-            shuttle.speed_kmh = round(vehicle.base_speed_kmh, 1)
-            shuttle.status = ShuttleStatus.IN_SERVICE
+            shuttle.speed_kmh = round(speed_kmh, 1)
+            shuttle.status = ShuttleStatus.DELAYED if delayed else ShuttleStatus.IN_SERVICE
 
         position, _, bearing = geometry.locate(shuttle.distance_m)
         shuttle.position = position
@@ -228,7 +293,9 @@ class SimulationEngine:
 
         if shuttle.status is not ShuttleStatus.AT_STOP:
             self._update_next_stop(vehicle)
-            if self._distance_to_next_stop(vehicle) <= ARRIVING_THRESHOLD_M:
+            # A delayed shuttle stays labelled delayed even when it is close:
+            # "arriving" would quietly undo the thing being demonstrated.
+            if not delayed and self._distance_to_next_stop(vehicle) <= ARRIVING_THRESHOLD_M:
                 shuttle.status = ShuttleStatus.ARRIVING
 
     def _first_stop_crossed(

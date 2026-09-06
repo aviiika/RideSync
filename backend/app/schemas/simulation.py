@@ -35,6 +35,13 @@ class SimulationStateResponse(BaseModel):
         )
 
 
+class DelayRequest(BaseModel):
+    """Inject a delay into one shuttle, so the delayed path can be shown."""
+
+    shuttle_id: str
+    seconds: float = Field(default=90.0, gt=0, le=1800, description="How long to run slow.")
+
+
 class SpeedRequest(BaseModel):
     """Demo speed control. Only the values the UI offers are accepted."""
 

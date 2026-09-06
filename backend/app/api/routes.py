@@ -1,9 +1,9 @@
 """Route and stop endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.deps import get_route_service
-from app.schemas import RouteResponse, StopResponse
+from app.schemas import RouteResponse
 from app.services import RouteNotFoundError, RouteService
 
 router = APIRouter(tags=["network"])
@@ -25,16 +25,3 @@ def get_route(
         return RouteResponse.from_domain(service.get_route(route_id))
     except RouteNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
-
-@router.get("/stops", response_model=list[StopResponse])
-def list_stops(
-    route_id: str | None = Query(default=None, description="Filter to one route."),
-    service: RouteService = Depends(get_route_service),
-) -> list[StopResponse]:
-    """Every stop, optionally filtered to a single route."""
-    try:
-        stops = service.list_stops(route_id)
-    except RouteNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    return [StopResponse.from_domain(stop) for stop in stops]

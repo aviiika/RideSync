@@ -70,5 +70,42 @@ export function useSimulationControls() {
       mutationFn: api.simulation.setSpeed,
       onSuccess: (state: SimulationState) => applySimulation(state),
     }),
+    delay: useMutation({
+      mutationFn: (shuttleId: string) => api.simulation.delay(shuttleId),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: ['nearby'] });
+        void queryClient.invalidateQueries({ queryKey: ['arrivals'] });
+      },
+    }),
+    clearDelays: useMutation(mutation(api.simulation.clearDelays)),
   };
+}
+
+/**
+ * A departure board for one stop.
+ *
+ * Only fetched while a stop is open, and refreshed on the same cadence as the
+ * nearby list so the two never disagree on screen.
+ */
+export function useStopArrivals(stopId: string | null, latitude: number, longitude: number) {
+  return useQuery({
+    queryKey: ['arrivals', stopId, latitude, longitude],
+    queryFn: () => api.arrivalsAt(stopId as string, latitude, longitude),
+    enabled: stopId !== null,
+    refetchInterval: NEARBY_REFRESH_MS,
+  });
+}
+
+/**
+ * Measured ETA error.
+ *
+ * Slow-moving by nature: an average over hundreds of predictions, so polling
+ * it hard would be wasted work.
+ */
+export function useEtaAccuracy() {
+  return useQuery({
+    queryKey: ['eta-accuracy'],
+    queryFn: api.etaAccuracy,
+    refetchInterval: 15_000,
+  });
 }

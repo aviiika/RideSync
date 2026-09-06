@@ -10,9 +10,11 @@ from functools import lru_cache
 
 from app.config import get_settings
 from app.data.repository import JsonRouteRepository, RouteRepository
+from app.db import Database
 from app.eta import DeterministicEtaEngine, EtaConfig, EtaEngine
 from app.realtime import ConnectionManager, SimulationRunner
 from app.services import RouteService
+from app.services.history_service import HistoryService
 from app.services.shuttle_service import ShuttleService
 from app.simulation import SimulationConfig, SimulationEngine
 
@@ -57,7 +59,20 @@ def get_shuttle_service() -> ShuttleService:
         engine=get_simulation_engine(),
         eta_engine=get_eta_engine(),
         route_service=get_route_service(),
+        walking_speed_kmh=get_settings().walking_speed_kmh,
     )
+
+
+@lru_cache
+def get_database() -> Database:
+    database = Database(get_settings().database_url)
+    database.create_all()
+    return database
+
+
+@lru_cache
+def get_history_service() -> HistoryService:
+    return HistoryService(database=get_database())
 
 
 @lru_cache
@@ -67,10 +82,13 @@ def get_connection_manager() -> ConnectionManager:
 
 @lru_cache
 def get_simulation_runner() -> SimulationRunner:
+    settings = get_settings()
     return SimulationRunner(
         engine=get_simulation_engine(),
         manager=get_connection_manager(),
-        tick_ms=get_settings().simulation_tick_ms,
+        tick_ms=settings.simulation_tick_ms,
+        eta_engine=get_eta_engine(),
+        history=get_history_service() if settings.history_enabled else None,
     )
 
 
@@ -82,6 +100,8 @@ def reset_dependencies() -> None:
         get_simulation_engine,
         get_eta_engine,
         get_shuttle_service,
+        get_database,
+        get_history_service,
         get_connection_manager,
         get_simulation_runner,
     ):

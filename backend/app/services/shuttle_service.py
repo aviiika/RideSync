@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.eta import EtaEngine, EtaEstimate
+from app.eta.confidence import Confidence, assess
 from app.geo import haversine_distance
 from app.geo.route_geometry import RouteGeometry
 from app.models import Coordinate, Route, Shuttle, Stop
@@ -31,10 +32,17 @@ class ShuttleSnapshot:
     target_stop: Stop | None
     eta: EtaEstimate | None
     recommendation: Recommendation
+    #: Seconds to walk from the rider to the target stop, if there is one.
+    walk_seconds: float | None
+    confidence: Confidence | None
 
     @property
     def eta_minutes(self) -> int | None:
         return self.eta.minutes if self.eta else None
+
+    @property
+    def walk_minutes(self) -> int | None:
+        return None if self.walk_seconds is None else max(0, round(self.walk_seconds / 60))
 
 
 class ShuttleService:
@@ -45,10 +53,12 @@ class ShuttleService:
         engine: SimulationEngine,
         eta_engine: EtaEngine,
         route_service: RouteService,
+        walking_speed_kmh: float = 4.8,
     ) -> None:
         self._engine = engine
         self._eta_engine = eta_engine
         self._route_service = route_service
+        self._walking_speed_kmh = walking_speed_kmh
 
     # ------------------------------------------------------------------ reads
 
@@ -89,13 +99,24 @@ class ShuttleService:
         if geometry is not None and target is not None:
             eta = self._eta_engine.estimate(shuttle, geometry, target.id)
 
+        # How long it takes the rider to reach the stop is part of the answer:
+        # a shuttle you cannot get to in time is not one to run for.
+        walk_seconds: float | None = None
+        if target is not None:
+            walk_metres = haversine_distance(user, target.position)
+            walk_seconds = walk_metres / 1000.0 / self._walking_speed_kmh * 3600.0
+
+        walk_minutes = None if walk_seconds is None else walk_seconds / 60.0
+
         return ShuttleSnapshot(
             shuttle=shuttle,
             route=route,
             direct_distance_m=haversine_distance(user, shuttle.position),
             target_stop=target,
             eta=eta,
-            recommendation=recommend(eta.minutes if eta else None),
+            recommendation=recommend(eta.minutes if eta else None, walk_minutes),
+            walk_seconds=walk_seconds,
+            confidence=assess(eta, shuttle) if eta is not None else None,
         )
 
     def snapshots(
@@ -118,6 +139,34 @@ class ShuttleService:
         return tuple(
             sorted(
                 results,
+                key=lambda snap: (snap.eta is None, snap.eta.seconds if snap.eta else 0.0),
+            )
+        )
+
+    def arrivals_at(
+        self, stop_id: str, user: Coordinate | None = None
+    ) -> tuple[ShuttleSnapshot, ...]:
+        """A departure board for one stop: what is due, soonest first.
+
+        This is the question a rider standing at a stop actually asks, and it
+        is not the same as "what is near me" - only shuttles whose route calls
+        here can ever arrive, however close anything else happens to be.
+
+        Distances are measured from the rider when one is given, and from the
+        stop itself otherwise.
+        """
+        stop = self._route_service.get_stop(stop_id)
+        origin = user if user is not None else stop.position
+
+        snapshots = [
+            self.snapshot(shuttle, origin, stop)
+            for shuttle in self._engine.shuttles
+            if shuttle.route_id == stop.route_id
+        ]
+
+        return tuple(
+            sorted(
+                snapshots,
                 key=lambda snap: (snap.eta is None, snap.eta.seconds if snap.eta else 0.0),
             )
         )

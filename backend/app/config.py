@@ -55,6 +55,17 @@ class Settings(BaseSettings):
     #: Multiplier padding ETAs for traffic and boarding friction.
     eta_delay_factor: float = Field(default=1.0, ge=0.5, le=3.0)
 
+    #: Where trip history lives. SQLite by default: append-only, local, and
+    #: no container to start before a demo.
+    database_url: str = "sqlite:///./data/ridesync.db"
+
+    #: History is observability; turn it off and nothing user-facing changes.
+    history_enabled: bool = True
+
+    #: Average walking speed, used to decide whether a rider can reach a stop
+    #: before the shuttle does. 4.8 km/h is a normal adult pace.
+    walking_speed_kmh: float = Field(default=4.8, gt=0, le=15)
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, value: object) -> object:

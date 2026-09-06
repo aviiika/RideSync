@@ -5,7 +5,7 @@
  * stays a five-second answer instead of a dashboard.
  */
 
-import { X } from 'lucide-react';
+import { ShieldCheck, TimerReset, X } from 'lucide-react';
 
 import type { Shuttle, ShuttleSnapshot } from '../../types/domain';
 import { formatDistance, formatHeading, formatPercent, formatSpeed, formatStatus } from '../../utils/format';
@@ -17,9 +17,17 @@ interface ShuttleDetailsPanelProps {
   live: Shuttle | undefined;
   snapshot: ShuttleSnapshot | undefined;
   onClose: () => void;
+  onInjectDelay?: (shuttleId: string) => void;
+  delaying?: boolean;
 }
 
-export function ShuttleDetailsPanel({ live, snapshot, onClose }: ShuttleDetailsPanelProps) {
+export function ShuttleDetailsPanel({
+  live,
+  snapshot,
+  onClose,
+  onInjectDelay,
+  delaying = false,
+}: ShuttleDetailsPanelProps) {
   const shuttle = live ?? snapshot?.shuttle;
 
   if (!shuttle) {
@@ -81,7 +89,23 @@ export function ShuttleDetailsPanel({ live, snapshot, onClose }: ShuttleDetailsP
           </>
         ) : null}
         <Detail label="Occupancy" value={formatPercent(shuttle.occupancy)} />
+        {snapshot?.walk_minutes !== null && snapshot?.walk_minutes !== undefined ? (
+          <Detail
+            label="Walk to stop"
+            value={snapshot.walk_minutes < 1 ? 'under a minute' : `${snapshot.walk_minutes} min`}
+          />
+        ) : null}
       </dl>
+
+      {snapshot?.eta?.confidence ? (
+        <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-surface-muted p-2 text-xs text-muted">
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            <span className="font-medium">{snapshot.eta.confidence.label}</span>{' '}
+            {snapshot.eta.confidence.reason}
+          </span>
+        </p>
+      ) : null}
 
       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-surface-muted">
         <div
@@ -92,6 +116,18 @@ export function ShuttleDetailsPanel({ live, snapshot, onClose }: ShuttleDetailsP
           }}
         />
       </div>
+
+      {onInjectDelay ? (
+        <button
+          type="button"
+          disabled={delaying || shuttle.status === 'DELAYED'}
+          onClick={() => onInjectDelay(shuttle.id)}
+          className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium transition hover:bg-surface-muted disabled:opacity-50"
+        >
+          <TimerReset className="h-4 w-4" />
+          {shuttle.status === 'DELAYED' ? 'Running late' : 'Delay this shuttle'}
+        </button>
+      ) : null}
 
       {snapshot?.eta ? (
         <p className="mt-3 text-xs text-muted">

@@ -118,7 +118,29 @@ order. Point at that. It makes the same point in one sentence.
 
 ---
 
-## 2:00 — Under the hood (40 seconds)
+## 2:00 - Three things a map with dots cannot do (40 seconds)
+
+Tap a stop on the map.
+
+> "Tap a stop and you get a departure board - what is due here, soonest first.
+> Only shuttles that actually call at this stop, however close anything else
+> happens to be."
+
+Point at a card that says the shuttle cannot be reached in time.
+
+> "And it knows how long it takes *you* to get to the stop. This one arrives in
+> two minutes, but the stop is a five-minute walk - so it says wait for the next
+> one, instead of telling you to run for something you cannot catch."
+
+Open a shuttle and press **Delay this shuttle**.
+
+> "I can inject a delay. Watch it drop to a crawl, the status change, and the
+> confidence on its ETA fall to low - because a late shuttle is an
+> unpredictable one."
+
+---
+
+## 2:40 - Under the hood (40 seconds)
 
 Click the route chips on the map, top left — isolate the Men's Hostel Shuttle.
 
@@ -142,14 +164,21 @@ Be straight about what it is:
 
 ---
 
-## 2:40 — Where it goes (20 seconds)
+## 3:20 - Where it goes (25 seconds)
 
-> "Today the ETA is honest arithmetic: remaining route distance over speed, plus
-> dwell time. It's behind an interface, so once there's real trip history, a
-> trained model drops into the same seam and everything above it is untouched."
+Point at the accuracy line under the simulation controls.
 
-> "What I won't do is train a model on my own simulation and call it accuracy.
-> That number would be meaningless."
+> "Every ETA the system promises is written down, and every actual arrival is
+> written down. That line is the two scored against each other - we are off by
+> about half a minute on average."
+
+> "And I have labelled it precisely: measured against *simulated* arrivals. It
+> tells you the estimator is consistent. It does not tell you anything about
+> real buses, and I am not going to pretend it does."
+
+> "That is also the training set. Once real telemetry replaces the simulation,
+> those same rows - distance, speed, stops on the way, time of day - become what
+> a model learns from, and it drops into the same interface."
 
 Close on the problem you opened with:
 
@@ -170,22 +199,25 @@ trained on synthetic data would be learning my own simulation's formula. The
 seam is built and documented; the data has to come first.
 
 **"How accurate is the ETA?"**
-Unanswerable honestly today, and I'd rather say so. Against real arrivals you'd
-measure MAE and median absolute error. What I can show is that it's consistent
-and that it correctly handles the case everyone gets wrong — a nearby shuttle
-heading away from you.
+Against its own simulated arrivals: mean absolute error of roughly half a
+minute over several hundred scored predictions. The app measures and displays
+that, and labels what it was measured against. Against real buses: unknown, and
+nothing here can tell you. The measurement is real; the world it measures is
+synthetic.
 
 **"Does it scale?"**
 Designed for 20–50 vehicles. Positions are drawn as map-native layers, not DOM
 markers, and telemetry updates the map outside React entirely, so a moving
 shuttle re-renders nothing. Raise `SHUTTLES_PER_ROUTE` in `.env` and show them.
 
-**"Why no database?"**
-Three routes and eighteen stops don't need one. It's behind a repository
-interface, so PostGIS is one class and one line when there's a reason.
+**"Why SQLite and not Postgres?"**
+There is a database - two append-only tables of predictions and arrivals, which
+is what the accuracy number is computed from. Routes and stops stay in JSON
+behind a repository interface, because three routes and eighteen stops do not
+need a server. PostGIS is one class and one line when there is a reason.
 
 **"How long did this take?"**
-122 backend tests and 76 frontend tests, CI on every push. Answer with that.
+159 backend tests and 109 frontend tests, CI on every push. Answer with that.
 
 ---
 
@@ -199,6 +231,8 @@ interface, so PostGIS is one class and one line when there's a reason.
 | Map blank, panel fine | Basemap tiles aren't loading — a network issue, not the app. The panel still answers the question; present from it. |
 | Lost on the map | Press the crosshair, top left. It reframes the campus. |
 | Demo drifted somewhere odd | **Reset**, then **Start**. Exact same starting state, every time. |
+| A shuttle stuck on "Running late" | Delays expire on their own; **Reset** clears them instantly. |
+| Accuracy line missing | Nothing has been scored yet. Run at 5x for a minute and it appears. |
 
 Rehearse the reset. It is the single most useful key on the screen: whatever
 happens, you are one click from a known-good state.

@@ -30,7 +30,17 @@ export type RecommendationLevel =
   | 'WORTH_WAITING'
   | 'CONSIDER_WAITING'
   | 'LONG_WAIT'
+  | 'TOO_TIGHT'
   | 'UNAVAILABLE';
+
+export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW';
+
+/** A heuristic band, deliberately not a probability. */
+export interface Confidence {
+  level: ConfidenceLevel;
+  label: string;
+  reason: string;
+}
 
 export interface Stop {
   id: string;
@@ -75,6 +85,7 @@ export interface Eta {
   intervening_stops: number;
   /** Which estimator produced this — shown so the demo never overclaims. */
   source: string;
+  confidence: Confidence | null;
 }
 
 export interface Recommendation {
@@ -94,6 +105,24 @@ export interface ShuttleSnapshot {
   target_stop_name: string | null;
   eta: Eta | null;
   recommendation: Recommendation;
+  /** Time on foot from the rider to the target stop. */
+  walk_seconds: number | null;
+  walk_minutes: number | null;
+  /** False when the shuttle arrives before the rider could get there. */
+  reachable: boolean | null;
+}
+
+/** Measured error of the ETA engine, against simulated arrivals. */
+export interface EtaAccuracy {
+  resolved_predictions: number;
+  pending_predictions: number;
+  recorded_arrivals: number;
+  mean_absolute_error_seconds: number | null;
+  mean_absolute_error_minutes: number | null;
+  median_absolute_error_seconds: number | null;
+  bias_seconds: number | null;
+  /** What the error was measured against. Never real-world GPS. */
+  measured_against: string;
 }
 
 export interface SimulationState {

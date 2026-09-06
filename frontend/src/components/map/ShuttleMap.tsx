@@ -31,6 +31,7 @@ import { RouteLegend } from './RouteLegend';
 import {
   EMPTY_COLLECTION,
   LAYER_SHUTTLE_BODY,
+  LAYER_STOP,
   SHUTTLE_ARROW_ICON,
   SOURCE_ROUTES,
   SOURCE_SHUTTLES,
@@ -66,6 +67,7 @@ interface ShuttleMapProps {
   user: Coordinate;
   routeFilter: string | null;
   onSelectShuttle: (shuttleId: string | null) => void;
+  onSelectStop: (stopId: string | null) => void;
   onChangeRouteFilter: (routeId: string | null) => void;
 }
 
@@ -74,6 +76,7 @@ export function ShuttleMap({
   user,
   routeFilter,
   onSelectShuttle,
+  onSelectStop,
   onChangeRouteFilter,
 }: ShuttleMapProps) {
   const riderSource = useRiderStore((state) => state.source);
@@ -89,6 +92,7 @@ export function ShuttleMap({
   const vehiclesRef = useRef<Map<string, AnimatedVehicle>>(new Map());
   const routeColorsRef = useRef<Record<string, string>>({});
   const selectRef = useRef(onSelectShuttle);
+  const selectStopRef = useRef(onSelectStop);
   const routesRef = useRef<Route[]>(routes);
   const framedRef = useRef(false);
   // Set once the map can be recentred; a no-op until then.
@@ -97,6 +101,7 @@ export function ShuttleMap({
   const filterRef = useRef(routeFilter);
 
   selectRef.current = onSelectShuttle;
+  selectStopRef.current = onSelectStop;
   routesRef.current = routes;
   userRef.current = user;
   filterRef.current = routeFilter;
@@ -230,11 +235,30 @@ export function ShuttleMap({
         return;
       }
 
-      // Otherwise clicking empty map clears the selection, as a map app does.
-      const hits = map.queryRenderedFeatures(event.point, { layers: [LAYER_SHUTTLE_BODY] });
+      // Otherwise clicking empty map clears whatever panel is open, as a map
+      // app does.
+      const hits = map.queryRenderedFeatures(event.point, {
+        layers: [LAYER_SHUTTLE_BODY, LAYER_STOP],
+      });
       if (hits.length === 0) {
         selectRef.current(null);
+        selectStopRef.current(null);
       }
+    });
+
+    // A stop opens its departure board: what is due here, soonest first.
+    map.on('click', LAYER_STOP, (event: MapMouseEvent & { features?: GeoJSON.Feature[] }) => {
+      const id = event.features?.[0]?.properties?.['id'];
+      if (typeof id === 'string') {
+        selectStopRef.current(id);
+      }
+    });
+
+    map.on('mouseenter', LAYER_STOP, () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', LAYER_STOP, () => {
+      map.getCanvas().style.cursor = '';
     });
 
     map.on('mouseenter', LAYER_SHUTTLE_BODY, () => {

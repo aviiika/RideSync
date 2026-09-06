@@ -14,6 +14,14 @@ class RouteNotFoundError(LookupError):
         self.route_id = route_id
 
 
+class StopNotFoundError(LookupError):
+    """Raised when a caller asks for a stop id that does not exist."""
+
+    def __init__(self, stop_id: str) -> None:
+        super().__init__(f"unknown stop: {stop_id}")
+        self.stop_id = stop_id
+
+
 class RouteService:
     """Reads the route network. The repository is injected so the storage
     backend can change without touching this class."""
@@ -29,6 +37,12 @@ class RouteService:
         if route is None:
             raise RouteNotFoundError(route_id)
         return route
+
+    def get_stop(self, stop_id: str) -> Stop:
+        stop = next((s for s in self._repository.list_stops() if s.id == stop_id), None)
+        if stop is None:
+            raise StopNotFoundError(stop_id)
+        return stop
 
     def list_stops(self, route_id: str | None = None) -> tuple[Stop, ...]:
         if route_id is not None:

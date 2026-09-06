@@ -22,6 +22,9 @@ is, which way it is heading, when it arrives, and whether waiting is worthwhile.
 | 4 | Makefile, CI workflow, architecture document | Done |
 | 5 | Route filtering, live header, demo script | Done |
 | 6 | Rider location and responsive layout | Done |
+| 7 | Stop departure boards and delay injection | Done |
+| 8 | Walking model and ETA confidence | Done |
+| 9 | Trip history and measured ETA error | Done |
 
 ---
 
@@ -186,6 +189,10 @@ Windows, and every target maps to a command documented above.
 | GET | `/shuttles/nearby` | Shuttles ranked by arrival time at the rider's stop |
 | GET | `/shuttles/nearest` | The single shuttle worth waiting for |
 | GET | `/shuttles/{id}` | One shuttle, described relative to the rider |
+| GET | `/stops/{id}/arrivals` | Departure board: what is due at one stop |
+| GET | `/metrics/eta` | Measured ETA error, against recorded arrivals |
+| POST | `/simulation/delay` | Slow one shuttle, to demonstrate the delayed path |
+| POST | `/simulation/clear-delays` | Return every shuttle to normal service |
 | GET | `/simulation` | Simulation clock state |
 | POST | `/simulation/start` · `/pause` · `/reset` · `/speed` | Demo controls |
 | WS | `/ws/shuttles` | Live telemetry, one batched frame per tick |
@@ -214,6 +221,9 @@ hard-coded, and `.env` is gitignored.
 | `ETA_DELAY_FACTOR` | Multiplier padding ETAs for traffic and boarding |
 | `VITE_API_URL` | REST base URL for the browser |
 | `VITE_WS_URL` | WebSocket URL for live telemetry |
+| `WALKING_SPEED_KMH` | Pace used to decide whether a stop is reachable in time |
+| `DATABASE_URL` | Trip history (SQLite; the file is gitignored) |
+| `HISTORY_ENABLED` | Turn history recording off entirely |
 | `VITE_MAP_STYLE_URL` | MapLibre style (OpenFreeMap Liberty by default, no key) |
 
 ---
@@ -255,6 +265,27 @@ but it can be moved:
 
 The chosen spot is remembered across reloads, so a demo that has been set up
 stays set up. Moving it recomputes the nearest stop, every ETA and the ranking.
+
+## Is it worth waiting?
+
+Three things beyond the ETA go into the answer:
+
+- **The walk.** A shuttle arriving in two minutes is no use if the stop is a
+  five-minute walk away, and the app says so rather than telling you to run for
+  something you cannot catch.
+- **Confidence.** Every estimate carries a coarse band with its reason: close
+  and direct is high, far away with several stops on the way is low, and a
+  shuttle already running late is always low. It is a heuristic, not a
+  probability, and the wording never pretends otherwise.
+- **Measured error.** The app records every ETA it commits to and every actual
+  arrival, then scores one against the other. The panel shows the running mean
+  absolute error, labelled as measured against simulated arrivals.
+
+## Tap a stop
+
+Selecting a stop opens its departure board - what is due here, soonest first.
+Only shuttles whose route calls at that stop can appear, however near anything
+else happens to be.
 
 ## On a phone
 

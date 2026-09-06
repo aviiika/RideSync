@@ -46,6 +46,9 @@ class Shuttle:
     occupancy: float
     #: Seconds still to wait at the current stop, if any.
     dwell_remaining_s: float = 0.0
+    #: Seconds of injected delay still running. Purely a demo affordance: it
+    #: lets a presenter show the delayed path instead of describing it.
+    delay_remaining_s: float = 0.0
     #: Index of the stop the shuttle is heading for.
     next_stop_index: int = 0
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))

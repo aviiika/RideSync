@@ -25,6 +25,10 @@ dist-ssr/
 .DS_Store
 Thumbs.db
 
+# Local trip history (regenerated on every run)
+*.db
+*.db-journal
+
 # Logs
 *.log
 npm-debug.log*

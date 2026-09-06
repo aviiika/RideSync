@@ -22,6 +22,8 @@ interface ShuttleStore {
   simulation: SimulationState | null;
   connection: ConnectionStatus;
   selectedShuttleId: string | null;
+  /** Stop whose departure board is open, or null. */
+  selectedStopId: string | null;
   /** Route the view is narrowed to, or null for the whole network. */
   routeFilter: string | null;
   /** Wall-clock time of the last telemetry frame. */
@@ -31,6 +33,7 @@ interface ShuttleStore {
   applySimulation: (state: SimulationState) => void;
   setConnection: (status: ConnectionStatus) => void;
   selectShuttle: (shuttleId: string | null) => void;
+  selectStop: (stopId: string | null) => void;
   setRouteFilter: (routeId: string | null) => void;
 }
 
@@ -40,6 +43,7 @@ export const useShuttleStore = create<ShuttleStore>((set) => ({
   simulation: null,
   connection: 'connecting',
   selectedShuttleId: null,
+  selectedStopId: null,
   routeFilter: null,
   lastUpdateAt: null,
 
@@ -60,7 +64,11 @@ export const useShuttleStore = create<ShuttleStore>((set) => ({
 
   setConnection: (connection) => set({ connection }),
 
-  selectShuttle: (selectedShuttleId) => set({ selectedShuttleId }),
+  // One panel at a time: a stop board and a shuttle's details answer
+  // different questions, and showing both would bury the answer.
+  selectShuttle: (selectedShuttleId) => set({ selectedShuttleId, selectedStopId: null }),
+
+  selectStop: (selectedStopId) => set({ selectedStopId, selectedShuttleId: null }),
 
   // Narrowing to a route clears a selection that is no longer visible, so the
   // details panel can never describe a shuttle the map is not showing.
@@ -74,6 +82,7 @@ export const useShuttleStore = create<ShuttleStore>((set) => ({
       return {
         routeFilter: routeId,
         selectedShuttleId: keepSelection ? state.selectedShuttleId : null,
+        selectedStopId: null,
       };
     }),
 }));
