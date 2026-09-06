@@ -45,6 +45,16 @@ class Settings(BaseSettings):
     #: Seed making demo runs deterministic and therefore repeatable.
     simulation_seed: int = 42
 
+    #: Vehicles spawned on each route.
+    shuttles_per_route: int = Field(default=2, ge=1, le=20)
+
+    #: Seconds a shuttle waits at each stop, used by both the simulation and
+    #: the ETA estimate so the two agree.
+    dwell_seconds: float = Field(default=20.0, ge=0, le=300)
+
+    #: Multiplier padding ETAs for traffic and boarding friction.
+    eta_delay_factor: float = Field(default=1.0, ge=0.5, le=3.0)
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, value: object) -> object:

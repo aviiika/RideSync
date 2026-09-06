@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
+from app.api.deps import get_simulation_engine, get_simulation_runner
 from app.config import Settings, get_settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
@@ -20,8 +21,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-        logger.info("API started - data dir: %s", settings.data_dir)
+        # The simulation starts running immediately: a demo that needs a button
+        # pressed before anything moves is a worse first five seconds.
+        engine = get_simulation_engine()
+        engine.start()
+
+        runner = get_simulation_runner()
+        await runner.start()
+        logger.info(
+            "API started - %d shuttles on %d routes",
+            len(engine.shuttles),
+            len(engine.shuttles) // max(1, settings.shuttles_per_route),
+        )
+
         yield
+
+        await runner.stop()
         logger.info("API stopped")
 
     app = FastAPI(

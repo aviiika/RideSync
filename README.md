@@ -18,13 +18,9 @@ is, which way it is heading, when it arrives, and whether waiting is worthwhile.
 | --- | --- | --- |
 | 1 | Repository discovery | Done |
 | 2 | Skeleton — backend, frontend, seed data, docs | Done |
-| 3 | Map: routes, stops, user location | Next |
-| 4 | Simulation engine | Planned |
-| 5 | Geospatial + ETA engines | Planned |
-| 6 | WebSocket + live updates | Planned |
-| 7 | UX polish, recommendation | Planned |
-| 8 | Testing | Planned |
-| 9 | Pitch/demo mode | Planned |
+| 3 | Live map: geospatial, simulation, ETA, recommendation, WebSocket, demo controls | Done |
+| 4 | Makefile, CI workflow, architecture document | Next |
+| 5 | Pitch polish and demo script | Planned |
 
 ---
 
@@ -160,6 +156,17 @@ npm run build
 | GET | `/routes` | Every route with geometry and stops |
 | GET | `/routes/{route_id}` | One route |
 | GET | `/stops` | Every stop, optional `?route_id=` filter |
+| GET | `/shuttles` | Every live shuttle, optional `?route_id=` filter |
+| GET | `/shuttles/nearby` | Shuttles ranked by arrival time at the rider's stop |
+| GET | `/shuttles/nearest` | The single shuttle worth waiting for |
+| GET | `/shuttles/{id}` | One shuttle, described relative to the rider |
+| GET | `/simulation` | Simulation clock state |
+| POST | `/simulation/start` · `/pause` · `/reset` · `/speed` | Demo controls |
+| WS | `/ws/shuttles` | Live telemetry, one batched frame per tick |
+
+`/shuttles/nearby` and `/shuttles/nearest` require `latitude` and `longitude`
+query parameters. Results are ordered by **ETA, not distance** — a shuttle
+80 m away that has just passed your stop is not the one to wait for.
 
 Route geometry is returned in GeoJSON `[longitude, latitude]` order, which is
 what MapLibre expects. Stops carry explicit `latitude` / `longitude` fields.
@@ -176,6 +183,9 @@ hard-coded, and `.env` is gitignored.
 | `CORS_ORIGINS` | Origins allowed to call the API |
 | `SIMULATION_TICK_MS` | Simulation tick interval (250–1000 recommended) |
 | `SIMULATION_SEED` | Seed making demo runs deterministic and repeatable |
+| `SHUTTLES_PER_ROUTE` | Vehicles spawned on each route |
+| `DWELL_SECONDS` | Seconds a shuttle waits at each stop |
+| `ETA_DELAY_FACTOR` | Multiplier padding ETAs for traffic and boarding |
 | `VITE_API_URL` | REST base URL for the browser |
 | `VITE_WS_URL` | WebSocket URL for live telemetry |
 | `VITE_MAP_STYLE_URL` | MapLibre style (OpenFreeMap Liberty by default, no key) |
@@ -192,5 +202,18 @@ Three routes around the VIT Vellore campus, defined in `data/routes/`:
 | `ROUTE-B` | North Hostel Shuttle | 5 | Reverses |
 | `ROUTE-C` | Katpadi Station Express | 4 | Reverses |
 
-To change the network, edit or add a JSON file in `data/routes/` — the loader
-validates geometry, stop ordering and coordinate ranges on startup.
+Two shuttles run on each route by default, spaced evenly so the demo opens
+with a plausible headway. To change the network, edit or add a JSON file in
+`data/routes/` — the loader validates geometry, stop ordering and coordinate
+ranges on startup.
+
+## How the demo behaves
+
+The simulation starts running as soon as the API boots, so the map is alive the
+moment the page opens. Shuttles travel along route geometry, dwell at stops,
+loop or reverse at the end of a route, and report heading and speed. Positions
+are broadcast twice a second and interpolated in the browser, so markers glide
+rather than jump.
+
+Given the same seed, every run is identical — which is what makes the pitch
+repeatable. **Reset** returns to the exact starting state.

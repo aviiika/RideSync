@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.deps import get_route_repository, get_route_service
+from app.api.deps import reset_dependencies
 from app.config import get_settings
 from app.data.repository import JsonRouteRepository
 from app.main import create_app
@@ -22,8 +22,9 @@ def route_service(repository: JsonRouteRepository) -> RouteService:
 
 @pytest.fixture
 def client() -> TestClient:
-    # Dependencies are lru_cached singletons; clear them so each test builds
-    # its own instances from the current settings.
-    get_route_repository.cache_clear()
-    get_route_service.cache_clear()
-    return TestClient(create_app())
+    # Dependencies are lru_cached singletons and the simulation is live state,
+    # so each test gets a freshly seeded world.
+    reset_dependencies()
+    with TestClient(create_app()) as test_client:
+        yield test_client
+    reset_dependencies()

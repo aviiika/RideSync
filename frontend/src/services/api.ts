@@ -3,11 +3,11 @@
  *
  * Thin and typed on purpose: it performs requests and surfaces failures as
  * `ApiError`. It holds no business logic and no caching — TanStack Query owns
- * server state.
+ * server state, and the WebSocket owns live positions.
  */
 
 import { env } from '../config/env';
-import type { Health, Route, Stop } from '../types/domain';
+import type { Health, Route, ShuttleSnapshot, SimulationState, Stop } from '../types/domain';
 
 /** A request that did not return a usable response. */
 export class ApiError extends Error {
@@ -26,11 +26,11 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
 
   try {
-    response = await fetch(`${env.apiUrl}${path}`);
+    response = await fetch(`${env.apiUrl}${path}`, init);
   } catch (cause) {
     // Network-level failure: the backend is down, unreachable or blocked.
     throw new ApiError(`Cannot reach the shuttle service at ${env.apiUrl}`, undefined, { cause });
@@ -43,10 +43,34 @@ async function request<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+function post<T>(path: string, body?: unknown): Promise<T> {
+  return request<T>(path, {
+    method: 'POST',
+    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+
+function riderQuery(latitude: number, longitude: number): string {
+  return `latitude=${latitude}&longitude=${longitude}`;
+}
+
 export const api = {
   health: () => request<Health>('/health'),
   listRoutes: () => request<Route[]>('/routes'),
   getRoute: (routeId: string) => request<Route>(`/routes/${encodeURIComponent(routeId)}`),
   listStops: (routeId?: string) =>
     request<Stop[]>(routeId ? `/stops?route_id=${encodeURIComponent(routeId)}` : '/stops'),
+
+  /** Shuttles ranked by when they reach the rider — soonest first, not nearest first. */
+  nearbyShuttles: (latitude: number, longitude: number) =>
+    request<ShuttleSnapshot[]>(`/shuttles/nearby?${riderQuery(latitude, longitude)}`),
+
+  simulation: {
+    state: () => request<SimulationState>('/simulation'),
+    start: () => post<SimulationState>('/simulation/start'),
+    pause: () => post<SimulationState>('/simulation/pause'),
+    reset: () => post<SimulationState>('/simulation/reset'),
+    setSpeed: (multiplier: number) => post<SimulationState>('/simulation/speed', { multiplier }),
+  },
 };
