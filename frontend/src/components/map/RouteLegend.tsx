@@ -26,37 +26,35 @@ export function RouteLegend({ routes, active, onChange, onRecentre }: RouteLegen
   }
 
   return (
-    <div className="pointer-events-none absolute left-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col gap-2">
-      <div
-        className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-panel border border-border bg-surface/95 p-1.5 shadow-sm backdrop-blur"
-        role="group"
-        aria-label="Filter by route"
-      >
-        <Chip active={active === null} onClick={() => onChange(null)}>
-          All routes
-        </Chip>
+    <div
+      className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-panel border border-border bg-surface/95 p-1.5 shadow-sm backdrop-blur"
+      role="group"
+      aria-label="Filter by route"
+    >
+      <Chip active={active === null} onClick={() => onChange(null)}>
+        All routes
+      </Chip>
 
-        {routes.map((route) => (
-          <Chip
-            key={route.id}
-            active={active === route.id}
-            color={route.color}
-            onClick={() => onChange(active === route.id ? null : route.id)}
-          >
-            {route.name}
-          </Chip>
-        ))}
-
-        <button
-          type="button"
-          onClick={onRecentre}
-          title="Recentre on campus"
-          aria-label="Recentre on campus"
-          className="ml-0.5 rounded-full p-1.5 text-muted transition hover:bg-surface-muted hover:text-ink"
+      {routes.map((route) => (
+        <Chip
+          key={route.id}
+          active={active === route.id}
+          color={route.color}
+          onClick={() => onChange(active === route.id ? null : route.id)}
         >
-          <Crosshair className="h-4 w-4" />
-        </button>
-      </div>
+          {route.name}
+        </Chip>
+      ))}
+
+      <button
+        type="button"
+        onClick={onRecentre}
+        title="Recentre on campus"
+        aria-label="Recentre on campus"
+        className="ml-0.5 rounded-full p-1.5 text-muted transition hover:bg-surface-muted hover:text-ink"
+      >
+        <Crosshair className="h-4 w-4" />
+      </button>
     </div>
   );
 }

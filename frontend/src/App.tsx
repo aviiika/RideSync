@@ -6,7 +6,7 @@
  * backend, and no business logic lives here.
  */
 
-import { AlertTriangle, Bus, Loader2 } from 'lucide-react';
+import { AlertTriangle, Bus, ChevronDown, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { ConnectionBanner } from './components/common/ConnectionBanner';
@@ -18,23 +18,20 @@ import { EtaBadge } from './components/shuttle/EtaBadge';
 import { useNearbyShuttles, useRoutes } from './hooks/useNetwork';
 import { useShuttleStream } from './hooks/useShuttleStream';
 import { isTelemetryStale, useShuttleStore } from './stores/shuttleStore';
+import { useRiderStore } from './stores/riderStore';
 import type { ConnectionStatus } from './types/ws';
 import { formatDistance } from './utils/format';
-
-/**
- * The rider's position.
- *
- * Fixed at the VIT Vellore Main Gate for the demo. Real geolocation is a
- * browser permission prompt away, but a pitch should not open with a dialog,
- * and a fixed position keeps the run repeatable.
- */
-const RIDER = { latitude: 12.9692, longitude: 79.1554 };
 
 export function App() {
   useShuttleStream();
 
+  // The rider starts at the Main Gate and can be moved from the map. A pitch
+  // should not open with a permission dialog, so the device is never asked
+  // unless someone presses the button.
+  const rider = useRiderStore((state) => state.position);
+
   const routes = useRoutes();
-  const nearby = useNearbyShuttles(RIDER.latitude, RIDER.longitude);
+  const nearby = useNearbyShuttles(rider.latitude, rider.longitude);
 
   const connection = useShuttleStore((state) => state.connection);
   const simulation = useShuttleStore((state) => state.simulation);
@@ -48,6 +45,7 @@ export function App() {
   );
 
   const stale = useStaleTelemetry(lastUpdateAt);
+  const [sheetOpen, setSheetOpen] = useState(true);
 
   // The panel honours the same filter as the map: isolating a route must not
   // leave the list advertising a shuttle that is no longer drawn.
@@ -79,7 +77,7 @@ export function App() {
           ) : (
             <ShuttleMap
               routes={routes.data ?? []}
-              user={RIDER}
+              user={rider}
               routeFilter={routeFilter}
               onSelectShuttle={selectShuttle}
               onChangeRouteFilter={setRouteFilter}
@@ -87,76 +85,109 @@ export function App() {
           )}
         </section>
 
-        <aside className="flex w-full shrink-0 flex-col gap-3 overflow-y-auto border-t border-border bg-surface-muted p-4 lg:w-[24rem] lg:border-l lg:border-t-0">
-          <ConnectionBanner status={connection} stale={stale} />
-
-          {selectedId ? (
-            <ShuttleDetailsPanel
-              live={liveShuttle}
-              snapshot={selectedSnapshot}
-              onClose={() => selectShuttle(null)}
+        <aside className="flex w-full shrink-0 flex-col gap-3 overflow-y-auto border-t border-border bg-surface-muted p-4 lg:max-h-none lg:w-[24rem] lg:border-l lg:border-t-0">
+          <button
+            type="button"
+            onClick={() => setSheetOpen((open) => !open)}
+            aria-expanded={sheetOpen}
+            className="-mt-1 flex items-center justify-between gap-2 text-left lg:hidden"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+              {sheetOpen ? 'Hide details' : nearestSummary(nearest)}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted transition-transform ${
+                sheetOpen ? '' : 'rotate-180'
+              }`}
+              aria-hidden="true"
             />
-          ) : nearby.isPending ? (
-            <p className="flex items-center gap-2 rounded-panel border border-border bg-surface p-4 text-sm text-muted">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              Finding your next shuttle…
-            </p>
-          ) : nearby.isError ? (
-            <ErrorCard title="Could not load shuttles" detail={nearby.error.message} />
-          ) : nearest ? (
-            <NearestShuttleCard snapshot={nearest} onSelect={selectShuttle} />
-          ) : (
-            <p className="rounded-panel border border-border bg-surface p-4 text-sm text-muted">
-              No shuttles are in service near you right now.
-            </p>
-          )}
+          </button>
 
-          <SimulationControls state={simulation} />
+          <div className={sheetOpen ? 'contents' : 'hidden lg:contents'}>
+              <ConnectionBanner status={connection} stale={stale} />
 
-          {snapshots.length > 1 ? (
-            <section className="rounded-panel border border-border bg-surface p-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Other shuttles
-              </h2>
-              <ul className="mt-2 flex flex-col divide-y divide-border">
-                {snapshots.slice(1).map((snapshot) => (
-                  <li key={snapshot.shuttle.id}>
-                    <button
-                      type="button"
-                      onClick={() => selectShuttle(snapshot.shuttle.id)}
-                      className="flex w-full items-center justify-between gap-3 py-2.5 text-left transition hover:opacity-70"
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <span
-                          className="h-2 w-2 shrink-0 rounded-full"
-                          style={{ backgroundColor: snapshot.route_color }}
-                          aria-hidden="true"
-                        />
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-medium">
-                            {snapshot.shuttle.name}
-                          </span>
-                          <span className="block truncate text-xs text-muted">
-                            {formatDistance(snapshot.direct_distance_m)} away
+            {selectedId ? (
+              <ShuttleDetailsPanel
+                live={liveShuttle}
+                snapshot={selectedSnapshot}
+                onClose={() => selectShuttle(null)}
+              />
+            ) : nearby.isPending ? (
+              <p className="flex items-center gap-2 rounded-panel border border-border bg-surface p-4 text-sm text-muted">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                Finding your next shuttle…
+              </p>
+            ) : nearby.isError ? (
+              <ErrorCard title="Could not load shuttles" detail={nearby.error.message} />
+            ) : nearest ? (
+              <NearestShuttleCard snapshot={nearest} onSelect={selectShuttle} />
+            ) : (
+              <p className="rounded-panel border border-border bg-surface p-4 text-sm text-muted">
+                No shuttles are in service near you right now.
+              </p>
+            )}
+
+            <SimulationControls state={simulation} />
+
+            {snapshots.length > 1 ? (
+              <section className="rounded-panel border border-border bg-surface p-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  Other shuttles
+                </h2>
+                <ul className="mt-2 flex flex-col divide-y divide-border">
+                  {snapshots.slice(1).map((snapshot) => (
+                    <li key={snapshot.shuttle.id}>
+                      <button
+                        type="button"
+                        onClick={() => selectShuttle(snapshot.shuttle.id)}
+                        className="flex w-full items-center justify-between gap-3 py-2.5 text-left transition hover:opacity-70"
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: snapshot.route_color }}
+                            aria-hidden="true"
+                          />
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-medium">
+                              {snapshot.shuttle.name}
+                            </span>
+                            <span className="block truncate text-xs text-muted">
+                              {formatDistance(snapshot.direct_distance_m)} away
+                            </span>
                           </span>
                         </span>
-                      </span>
-                      <EtaBadge eta={snapshot.eta} size="small" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+                        <EtaBadge eta={snapshot.eta} size="small" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
-          <p className="px-1 pb-1 text-xs text-muted">
-            Telemetry is simulated, not real GPS. The architecture is built so a real fleet
-            feed can replace it without changing this interface.
-          </p>
+              <p className="px-1 pb-1 text-xs text-muted">
+                Telemetry is simulated, not real GPS. The architecture is built so a real fleet
+                feed can replace it without changing this interface.
+              </p>
+          </div>
         </aside>
       </main>
     </div>
   );
+}
+
+/** One line for the collapsed mobile sheet: the answer, without the detail. */
+function nearestSummary(nearest: { shuttle: { name: string }; eta: { minutes: number } | null } | undefined): string {
+  if (!nearest) {
+    return 'No shuttles nearby';
+  }
+  if (!nearest.eta) {
+    return `${nearest.shuttle.name} · ETA unavailable`;
+  }
+  if (nearest.eta.minutes < 1) {
+    return `${nearest.shuttle.name} · arriving now`;
+  }
+  return `${nearest.shuttle.name} · ~${nearest.eta.minutes} min`;
 }
 
 function Header({

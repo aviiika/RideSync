@@ -360,6 +360,9 @@ and is stubbed; its logic lives in pure functions that are tested directly.
 | Deterministic seed | The pitch has to be repeatable |
 | Speed multiplier scales simulated time only | A fast demo must not become a network flood |
 | Map bounds derived from route data | Editing the network moves the map with it |
+| Rider position in its own store | It changes when a person moves, not twice a second; mixing it with telemetry would wake every ETA subscriber on every frame |
+| A device fix outside campus is refused | Campus ETAs cannot apply from three kilometres away; a wrong answer is worse than no answer |
+| Mobile sheet collapses by not rendering | A `max-height` collapse silently failed to resolve; conditional rendering has no transition to race and no utility to lose a specificity fight |
 | `optimizeDeps.exclude: ['maplibre-gl']` | Vite's optimizer breaks MapLibre's worker; the map fetches a style but never a tile |
 | Overlay setup runs on `load` *and* `styledata`, and skips what exists | With a warm cache the style can be ready before the listener attaches; relying on `load` alone left a basemap with no routes on it |
 
@@ -369,7 +372,6 @@ and is stubbed; its logic lives in pure functions that are tested directly.
 
 Stated plainly rather than discovered later.
 
-- Rider position is fixed at the Main Gate. No browser geolocation.
 - Route geometry is hand-placed approximation of campus roads, not surveyed and
   not road-matched.
 - No persistence. A backend restart reseeds the world; no trip history exists,
@@ -377,6 +379,9 @@ Stated plainly rather than discovered later.
 - No authentication, no rate limiting. The API is open by design for a local
   demo and is not deployable as-is.
 - Occupancy is a seeded random value with no dynamics. It is decoration.
+- The rider position is a point with no walking model: "300 m away" is not
+  "four minutes' walk", and the recommendation does not account for how long it
+  takes to reach the stop.
 - `DELAYED` exists in the status vocabulary but nothing ever sets it.
 - Bundle is ~1.2 MB (332 kB gzipped), dominated by MapLibre. No code splitting.
 - Frontend tests stub the map, so map interaction — click to select, bounds

@@ -11,6 +11,12 @@ export type LoopMode = 'LOOP' | 'REVERSE';
 /** A GeoJSON position: `[longitude, latitude]` — the order MapLibre expects. */
 export type Position = [longitude: number, latitude: number];
 
+/** A point, in the (latitude, longitude) order the API uses. */
+export interface Coordinate {
+  latitude: number;
+  longitude: number;
+}
+
 export type ShuttleStatus =
   | 'IN_SERVICE'
   | 'ARRIVING'

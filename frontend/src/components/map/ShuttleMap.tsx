@@ -23,7 +23,10 @@ import { useEffect, useRef } from 'react';
 
 import { env } from '../../config/env';
 import { useShuttleStore } from '../../stores/shuttleStore';
-import type { Route, Shuttle } from '../../types/domain';
+import type { Coordinate, Route, Shuttle } from '../../types/domain';
+import { useRiderStore } from '../../stores/riderStore';
+import { useDeviceLocation } from '../../hooks/useDeviceLocation';
+import { LocationControl } from './LocationControl';
 import { RouteLegend } from './RouteLegend';
 import {
   EMPTY_COLLECTION,
@@ -60,7 +63,7 @@ interface AnimatedVehicle {
 
 interface ShuttleMapProps {
   routes: Route[];
-  user: { latitude: number; longitude: number };
+  user: Coordinate;
   routeFilter: string | null;
   onSelectShuttle: (shuttleId: string | null) => void;
   onChangeRouteFilter: (routeId: string | null) => void;
@@ -73,6 +76,13 @@ export function ShuttleMap({
   onSelectShuttle,
   onChangeRouteFilter,
 }: ShuttleMapProps) {
+  const riderSource = useRiderStore((state) => state.source);
+  const picking = useRiderStore((state) => state.picking);
+  const locationError = useRiderStore((state) => state.locationError);
+  const startPicking = useRiderStore((state) => state.startPicking);
+  const cancelPicking = useRiderStore((state) => state.cancelPicking);
+  const resetRider = useRiderStore((state) => state.reset);
+  const { locating, request: requestDeviceLocation } = useDeviceLocation(routes);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const readyRef = useRef(false);
@@ -107,7 +117,12 @@ export function ShuttleMap({
     });
     mapRef.current = map;
 
-    map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+    // Zoom buttons only where there is room for them. On a phone the route
+    // legend occupies that corner, and pinch-to-zoom is the natural gesture
+    // anyway.
+    if (window.innerWidth >= 1024) {
+      map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+    }
 
     // Whatever data arrived before the style was ready is applied here, so
     // the map is never left holding empty sources.
@@ -203,8 +218,19 @@ export function ShuttleMap({
       }
     });
 
-    // Clicking empty map clears the selection, the way a map app behaves.
     map.on('click', (event: MapMouseEvent) => {
+      // While placing the rider, a click means "stand here" and nothing else.
+      if (useRiderStore.getState().picking) {
+        useRiderStore
+          .getState()
+          .setPosition(
+            { latitude: event.lngLat.lat, longitude: event.lngLat.lng },
+            'picked',
+          );
+        return;
+      }
+
+      // Otherwise clicking empty map clears the selection, as a map app does.
       const hits = map.queryRenderedFeatures(event.point, { layers: [LAYER_SHUTTLE_BODY] });
       if (hits.length === 0) {
         selectRef.current(null);
@@ -253,6 +279,14 @@ export function ShuttleMap({
       geoJsonSource(map, SOURCE_USER)?.setData(pointToGeoJson(user.longitude, user.latitude));
     }
   }, [user.latitude, user.longitude]);
+
+  // --- picking mode --------------------------------------------------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map) {
+      map.getCanvas().style.cursor = picking ? 'crosshair' : '';
+    }
+  }, [picking]);
 
   // --- route filter --------------------------------------------------------
   useEffect(() => {
@@ -333,12 +367,24 @@ export function ShuttleMap({
 
   return (
     <div className="relative h-full w-full">
-      <RouteLegend
-        routes={routes}
-        active={routeFilter}
-        onChange={onChangeRouteFilter}
-        onRecentre={() => recentreRef.current()}
-      />
+      <div className="pointer-events-none absolute left-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-2">
+        <RouteLegend
+          routes={routes}
+          active={routeFilter}
+          onChange={onChangeRouteFilter}
+          onRecentre={() => recentreRef.current()}
+        />
+        <LocationControl
+          source={riderSource}
+          picking={picking}
+          locating={locating}
+          error={locationError}
+          onPick={startPicking}
+          onCancelPick={cancelPicking}
+          onUseDevice={requestDeviceLocation}
+          onReset={resetRider}
+        />
+      </div>
       <div ref={containerRef} className="h-full w-full" data-testid="shuttle-map" />
     </div>
   );

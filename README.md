@@ -21,6 +21,7 @@ is, which way it is heading, when it arrives, and whether waiting is worthwhile.
 | 3 | Live map: geospatial, simulation, ETA, recommendation, WebSocket, demo controls | Done |
 | 4 | Makefile, CI workflow, architecture document | Done |
 | 5 | Route filtering, live header, demo script | Done |
+| 6 | Rider location and responsive layout | Done |
 
 ---
 
@@ -241,6 +242,26 @@ Two shuttles run on each route by default, spaced evenly so the demo opens
 with a plausible headway. To change the network, edit or add a JSON file in
 `data/routes/` — the loader validates geometry, stop ordering and coordinate
 ranges on startup.
+
+## Where you are standing
+
+Every ETA on screen is relative to one point. By default that is the Main Gate,
+but it can be moved:
+
+- **Set on map** — tap anywhere on campus to stand there
+- **Use my device location** — asks the browser, and refuses a fix outside
+  campus rather than producing ETAs that cannot apply
+- **Crosshair** — back to the Main Gate
+
+The chosen spot is remembered across reloads, so a demo that has been set up
+stays set up. Moving it recomputes the nearest stop, every ETA and the ranking.
+
+## On a phone
+
+The layout is map-first at every width. On a narrow screen the detail panel
+becomes a sheet that collapses to a single line — *"Men's Hostel Shuttle 1 ·
+arriving now"* — leaving the map the whole screen. Tap the line to bring the
+detail back.
 
 ## How the demo behaves
 
