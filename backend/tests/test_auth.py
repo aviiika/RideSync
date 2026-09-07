@@ -1,8 +1,9 @@
-"""Sign-in by registration number.
+"""Sign-in.
 
-The rule under test is that the password *is* the registration number. These
-tests pin the behaviour, including the parts that are deliberately weak, so
-nobody later mistakes this for authentication.
+Any registration number and any password are accepted. These tests pin that
+deliberately - including that no password is ever rejected - so nobody later
+mistakes this for authentication, and so a real check cannot be removed by
+accident once one exists.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -10,7 +11,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-from app.services.auth_service import AuthError, AuthService
+from app.services.auth_service import MAX_REGISTRATION_LENGTH, AuthError, AuthService
 
 REGISTRATION = "24MID0159"
 
@@ -21,55 +22,65 @@ def auth() -> AuthService:
 
 
 class TestLogin:
-    def test_signs_in_when_the_password_is_the_registration_number(
-        self, auth: AuthService
-    ) -> None:
-        session = auth.login(REGISTRATION, REGISTRATION)
+    def test_signs_in(self, auth: AuthService) -> None:
+        session = auth.login(REGISTRATION, "anything")
 
         assert session.registration_number == REGISTRATION
         assert session.token
         assert session.expires_at > datetime.now(UTC)
 
-    def test_case_and_spacing_do_not_matter(self, auth: AuthService) -> None:
-        session = auth.login("  24mid0159 ", "24Mid0159")
-        assert session.registration_number == REGISTRATION
-
-    def test_rejects_a_password_that_is_not_the_registration_number(
-        self, auth: AuthService
-    ) -> None:
-        with pytest.raises(AuthError, match="password is your registration number"):
-            auth.login(REGISTRATION, "hunter2")
-
     @pytest.mark.parametrize(
-        "value",
-        ["", "24MID", "MID0159", "244MID0159", "24MI0159", "24MID01590", "24-MID-0159"],
+        "registration",
+        ["24MID0159", "20BCE1234", "21bce9999", "staff-01", "guest", "A", "12345678"],
     )
-    def test_rejects_a_malformed_registration_number(
-        self, auth: AuthService, value: str
-    ) -> None:
-        with pytest.raises(AuthError, match="registration number"):
-            auth.login(value, value)
+    def test_accepts_any_registration_number(self, auth: AuthService, registration: str) -> None:
+        session = auth.login(registration, "password")
+        assert session.registration_number == registration.strip().upper()
 
-    def test_the_error_explains_the_expected_shape(self, auth: AuthService) -> None:
-        with pytest.raises(AuthError, match="24MID0159"):
-            auth.login("nonsense", "nonsense")
+    @pytest.mark.parametrize("password", ["x", "password", "24MID0159", "!@#$%^&*()", "   a   "])
+    def test_accepts_any_password(self, auth: AuthService, password: str) -> None:
+        """No password is ever wrong. Deliberate, and stated everywhere."""
+        assert auth.login(REGISTRATION, password).registration_number == REGISTRATION
+
+    def test_case_and_spacing_do_not_matter(self, auth: AuthService) -> None:
+        assert auth.login("  24mid0159 ", "pw").registration_number == REGISTRATION
+
+    def test_the_same_person_typed_differently_is_one_identity(self, auth: AuthService) -> None:
+        first = auth.login("24mid0159", "a").registration_number
+        second = auth.login(" 24MID0159", "b").registration_number
+        assert first == second
+
+    @pytest.mark.parametrize("blank", ["", "   ", "\t"])
+    def test_an_empty_registration_number_is_refused(self, auth: AuthService, blank: str) -> None:
+        with pytest.raises(AuthError, match="Enter your registration number"):
+            auth.login(blank, "password")
+
+    @pytest.mark.parametrize("blank", ["", "   "])
+    def test_an_empty_password_is_refused(self, auth: AuthService, blank: str) -> None:
+        with pytest.raises(AuthError, match="Enter a password"):
+            auth.login(REGISTRATION, blank)
+
+    def test_an_absurdly_long_identifier_is_refused(self, auth: AuthService) -> None:
+        """Not a security check - a guard against storing nonsense as an identity."""
+        with pytest.raises(AuthError, match="too long"):
+            auth.login("A" * (MAX_REGISTRATION_LENGTH + 1), "password")
 
 
 class TestTokens:
     def test_a_fresh_token_verifies(self, auth: AuthService) -> None:
-        token = auth.login(REGISTRATION, REGISTRATION).token
+        token = auth.login(REGISTRATION, "pw").token
         assert auth.verify(token) == REGISTRATION
 
     def test_a_tampered_registration_number_is_rejected(self, auth: AuthService) -> None:
-        """The whole point of signing: local storage cannot be edited into a session."""
-        token = auth.login(REGISTRATION, REGISTRATION).token
+        """The whole point of signing: browser storage cannot be edited into a session."""
+        token = auth.login(REGISTRATION, "pw").token
         forged = token.replace(REGISTRATION, "24MID9999")
 
         with pytest.raises(AuthError):
             auth.verify(forged)
 
     def test_a_tampered_expiry_is_rejected(self, auth: AuthService) -> None:
-        registration, expiry, signature = auth.login(REGISTRATION, REGISTRATION).token.split(".")
+        registration, expiry, signature = auth.login(REGISTRATION, "pw").token.split(".")
         extended = f"{registration}.{int(expiry) + 100_000}.{signature}"
 
         with pytest.raises(AuthError):
@@ -77,10 +88,9 @@ class TestTokens:
 
     def test_a_token_signed_with_another_secret_is_rejected(self, auth: AuthService) -> None:
         other = AuthService(secret="different-secret")
-        token = other.login(REGISTRATION, REGISTRATION).token
 
         with pytest.raises(AuthError):
-            auth.verify(token)
+            auth.verify(other.login(REGISTRATION, "pw").token)
 
     def test_an_expired_token_is_rejected(self) -> None:
         service = AuthService(secret="test-secret", session_hours=1)
@@ -89,10 +99,15 @@ class TestTokens:
         with pytest.raises(AuthError, match="expired"):
             service.verify(expired)
 
-    @pytest.mark.parametrize("token", ["", "nonsense", "a.b", "a.b.c.d", "24MID0159.notanumber.x"])
+    @pytest.mark.parametrize("token", ["", "nonsense", "a.b", "24MID0159.notanumber.x"])
     def test_malformed_tokens_are_rejected(self, auth: AuthService, token: str) -> None:
         with pytest.raises(AuthError):
             auth.verify(token)
+
+    def test_an_identifier_containing_a_dot_still_round_trips(self, auth: AuthService) -> None:
+        """Identifiers are free text now, so the token format must cope."""
+        token = auth.login("first.last", "pw").token
+        assert auth.verify(token) == "FIRST.LAST"
 
     def test_a_secret_is_required(self) -> None:
         with pytest.raises(ValueError, match="secret"):
@@ -103,7 +118,7 @@ class TestLoginEndpoint:
     def test_signs_in(self, client: TestClient) -> None:
         response = client.post(
             "/auth/login",
-            json={"registration_number": REGISTRATION, "password": REGISTRATION},
+            json={"registration_number": REGISTRATION, "password": "whatever"},
         )
 
         assert response.status_code == 200
@@ -111,28 +126,24 @@ class TestLoginEndpoint:
         assert body["registration_number"] == REGISTRATION
         assert body["token"]
 
-    def test_a_wrong_password_is_401_with_a_usable_message(self, client: TestClient) -> None:
+    def test_any_password_works(self, client: TestClient) -> None:
         response = client.post(
             "/auth/login",
-            json={"registration_number": REGISTRATION, "password": "wrong"},
+            json={"registration_number": "20BCE1234", "password": "hunter2"},
         )
+        assert response.status_code == 200
 
-        assert response.status_code == 401
-        assert "registration number" in response.json()["detail"]
-
-    def test_a_malformed_number_is_401(self, client: TestClient) -> None:
-        response = client.post(
-            "/auth/login", json={"registration_number": "abc", "password": "abc"}
-        )
+    def test_a_blank_registration_number_is_401(self, client: TestClient) -> None:
+        response = client.post("/auth/login", json={"registration_number": "   ", "password": "pw"})
         assert response.status_code == 401
 
     def test_an_empty_request_is_rejected(self, client: TestClient) -> None:
         assert client.post("/auth/login", json={}).status_code == 422
 
-    def test_me_returns_the_signed_in_student(self, client: TestClient) -> None:
+    def test_me_returns_the_signed_in_user(self, client: TestClient) -> None:
         token = client.post(
             "/auth/login",
-            json={"registration_number": REGISTRATION, "password": REGISTRATION},
+            json={"registration_number": REGISTRATION, "password": "pw"},
         ).json()["token"]
 
         response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})

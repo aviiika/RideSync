@@ -337,24 +337,24 @@ schema is two tables owned entirely by this application, and a demo that needs
 
 ## 14b. Sign-in
 
-The app opens on a sign-in page: registration number, and the password is the
-registration number.
+The app opens on a sign-in page: a registration number and a password. **Any
+registration number and any password are accepted.**
 
-**This is identification, not authentication.** Anyone who knows a classmate's
-number can sign in as them. That is a deliberate product decision for a campus
-demo - it personalises the app without a password anyone has to remember - and
-it is stated on the login page itself, in the API description and here, rather
-than dressed up as a security control.
+This is identification, not authentication. It exists so the app knows who to
+greet and whose settings to remember. It is stated on the login page itself, in
+the API description, in the service docstring and here - rather than dressed up
+as a security control.
 
 What is implemented properly, because it costs nothing to do right:
 
-- The registration number's shape is validated and normalised, so `24mid0159`
-  and `  24MID0159  ` are the same student.
-- The session token is HMAC-signed over the number and an expiry, so a session
-  cannot be forged or extended by editing local storage. Tests cover a tampered
-  number, a tampered expiry, a foreign secret and an expired token.
-- The comparison is constant-time, so the shape of the check does not change if
-  the password rule ever does.
+- The registration number is normalised, so the same person typed differently
+  is one identity.
+- The session token is HMAC-signed over the identity and an expiry, so a
+  session cannot be forged or extended by editing browser storage. Tests cover
+  a tampered identity, a tampered expiry, a foreign secret and an expired
+  token.
+- The only refusals are empty fields and an absurdly long identifier, and the
+  code says explicitly that neither is a security check.
 
 **The API is not gated on it.** Every shuttle endpoint remains open, and a test
 asserts that so it stays a documented choice rather than an accident. Gating
@@ -425,7 +425,7 @@ and is stubbed; its logic lives in pure functions that are tested directly.
 | Map bounds derived from route data | Editing the network moves the map with it |
 | Rider position in its own store | It changes when a person moves, not twice a second; mixing it with telemetry would wake every ETA subscriber on every frame |
 | A device fix outside campus is refused | Campus ETAs cannot apply from three kilometres away; a wrong answer is worse than no answer |
-| Password is the registration number | Asked for explicitly; it identifies a student without a password to remember. Labelled as identification, not security, everywhere it appears |
+| Any credentials are accepted | Asked for explicitly; sign-in identifies a student rather than authenticating one. Labelled as identification, not security, everywhere it appears |
 | Session tokens signed and expiring | Costs nothing, and stops a session being forged by editing browser storage |
 | API endpoints not gated on sign-in | The data is identical for every student; gating would mean threading a token through the WebSocket for no gain |
 | Place search over stops, not a geocoder | A campus has a finite list of places, and free-text search could return somewhere no shuttle goes |
@@ -454,8 +454,8 @@ Stated plainly rather than discovered later.
   but live positions do not: the simulation always restarts from the seed.
 - Historical trips are recorded but cannot be replayed. The rows exist; there
   is no way to watch a past run.
-- Sign-in is identification only: the password is the registration number, and
-  the API is not gated on it. There is no rate limiting. Not deployable as-is.
+- Sign-in is identification only: any credentials are accepted and the API is
+  not gated on it. There is no rate limiting. Not deployable as-is.
 - Occupancy is a seeded random value with no dynamics. It is decoration.
 - The confidence band is a heuristic over three conditions, not a calibrated
   interval. It says which estimates are shakier, not by how much.

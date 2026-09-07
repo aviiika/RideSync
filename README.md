@@ -253,19 +253,19 @@ to whatever the data says, so moving a stop moves the map with it.
 
 ## Signing in
 
-The app opens on a sign-in page. Enter your registration number — for example
-`24MID0159` — and **your password is your registration number**. The page says
-so, so nobody is left guessing.
+The app opens on a sign-in page. Enter a registration number — for example
+`24MID0159` — and any password.
 
-> **This identifies you; it does not authenticate you.** Anyone who knows a
-> registration number can sign in as that student. It exists so the app can
-> greet you and remember where you wait, not to protect anything — the shuttle
-> data is the same for everyone, and the API endpoints are deliberately not
-> gated behind it.
+> **This identifies you; it does not authenticate you.** Any registration
+> number and any password are accepted. Sign-in exists so the app knows who to
+> greet and whose settings to remember — it protects nothing, the shuttle data
+> is the same for everyone, and the API endpoints are deliberately not gated
+> behind it.
 
-What is done properly: the number's shape is validated, and the session token is
-HMAC-signed with an expiry, so a session cannot be forged or extended by editing
-browser storage. Set `AUTH_SECRET` anywhere that matters.
+What is done properly, because it costs nothing: the registration number is
+normalised, so `24mid0159` and `  24MID0159  ` are one identity; and the session
+token is HMAC-signed with an expiry, so a session cannot be forged or extended
+by editing browser storage. Set `AUTH_SECRET` anywhere that matters.
 
 ## Where you are standing
 

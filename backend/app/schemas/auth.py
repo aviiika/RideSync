@@ -10,14 +10,14 @@ from app.services.auth_service import Session
 
 
 class LoginRequest(BaseModel):
-    """Sign in with a registration number.
+    """Sign in.
 
-    The password is the registration number. That is identification, not
-    security, and the endpoint description says so.
+    Any registration number and any password are accepted. That is
+    identification, not authentication, and the endpoint description says so.
     """
 
-    registration_number: str = Field(min_length=1, max_length=32, examples=["24MID0159"])
-    password: str = Field(min_length=1, max_length=32, examples=["24MID0159"])
+    registration_number: str = Field(min_length=1, max_length=64, examples=["24MID0159"])
+    password: str = Field(min_length=1, max_length=128, examples=["anything"])
 
 
 class SessionResponse(BaseModel):

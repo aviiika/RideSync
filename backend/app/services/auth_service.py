@@ -1,14 +1,14 @@
-"""Sign-in by registration number.
+"""Sign-in.
 
-**This is identification, not security.** The password is the registration
-number itself, so anyone who knows a classmate's number can sign in as them.
-That is a deliberate product decision for a campus demo - it personalises the
-app without a password anyone has to remember - and it is stated plainly here,
-in the API docs and in `docs/architecture.md` rather than dressed up.
+**There is no authentication here.** Any registration number and any password
+are accepted. Sign-in exists so the app knows who to greet and whose settings
+to remember - it protects nothing, and every layer says so rather than dressing
+it up.
 
-What the module does do properly: it validates the registration number's shape,
-normalises it, and issues a signed, expiring token so a session cannot be
-forged or extended by editing local storage.
+What the module still does properly, because it costs nothing: it normalises
+the registration number so the same student is the same identity however they
+type it, and it issues a signed, expiring token so a session cannot be forged
+or extended by editing browser storage.
 """
 
 from __future__ import annotations
@@ -16,14 +16,14 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
-import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-#: VIT registration numbers look like 24MID0159: year, programme, serial.
-REGISTRATION_PATTERN = re.compile(r"^\d{2}[A-Za-z]{3}\d{4}$")
-
 _TOKEN_SEPARATOR = "."
+
+#: Long enough for any real registration number, short enough to reject junk
+#: that would only ever be a paste accident.
+MAX_REGISTRATION_LENGTH = 32
 
 
 class AuthError(Exception):
@@ -32,7 +32,7 @@ class AuthError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class Session:
-    """A signed-in student."""
+    """A signed-in user."""
 
     registration_number: str
     token: str
@@ -40,7 +40,7 @@ class Session:
 
 
 class AuthService:
-    """Validates registration numbers and issues signed session tokens."""
+    """Accepts any credentials and issues signed session tokens."""
 
     def __init__(self, secret: str, session_hours: int = 12) -> None:
         if not secret:
@@ -51,19 +51,28 @@ class AuthService:
     # ------------------------------------------------------------------ login
 
     def login(self, registration_number: str, password: str) -> Session:
-        """Sign in, or raise :class:`AuthError` with a usable message."""
+        """Sign in with any registration number and any password.
+
+        The only refusals are empty fields and an absurdly long identifier -
+        neither of which is a security check, just a guard against storing
+        nonsense as somebody's identity.
+        """
         normalised = normalise_registration_number(registration_number)
 
-        if not REGISTRATION_PATTERN.match(normalised):
+        if not normalised:
+            raise AuthError("Enter your registration number.")
+
+        if len(normalised) > MAX_REGISTRATION_LENGTH:
             raise AuthError(
-                "That does not look like a registration number. "
-                "It should be two digits, three letters and four digits, like 24MID0159."
+                f"That registration number is too long "
+                f"(more than {MAX_REGISTRATION_LENGTH} characters)."
             )
 
-        # The password is the registration number. Compared in constant time
-        # anyway, so the shape of this check does not change if the rule does.
-        if not hmac.compare_digest(normalised, normalise_registration_number(password)):
-            raise AuthError("Your password is your registration number.")
+        if not password.strip():
+            raise AuthError("Enter a password.")
+
+        # The password is not checked against anything. Deliberate: see the
+        # module docstring and docs/architecture.md section 14b.
 
         expires_at = datetime.now(UTC) + timedelta(hours=self._session_hours)
         return Session(
@@ -82,7 +91,7 @@ class AuthService:
         """
         try:
             payload, signature = token.rsplit(_TOKEN_SEPARATOR, 1)
-            registration_number, expiry_raw = payload.split(_TOKEN_SEPARATOR)
+            registration_number, expiry_raw = payload.rsplit(_TOKEN_SEPARATOR, 1)
             expires_at = datetime.fromtimestamp(int(expiry_raw), tz=UTC)
         except (ValueError, OverflowError, OSError) as exc:
             raise AuthError("That session is not valid. Please sign in again.") from exc
@@ -107,5 +116,5 @@ class AuthService:
 
 
 def normalise_registration_number(value: str) -> str:
-    """Upper-case and strip, so 24mid0159 and ' 24MID0159 ' are the same person."""
+    """Upper-case and strip, so 24mid0159 and ' 24MID0159 ' are one identity."""
     return value.strip().upper()

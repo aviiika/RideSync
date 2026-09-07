@@ -1,9 +1,9 @@
 /**
- * Sign in with a registration number.
+ * Sign in.
  *
- * One field that matters and one that confirms it: the password *is* the
- * registration number. The page says so out loud rather than letting a student
- * guess, because a login they cannot get past is worse than no login at all.
+ * Any registration number and any password are accepted - this identifies a
+ * student so the app can remember their settings, it does not authenticate
+ * anyone. The page says so rather than implying a check that is not there.
  */
 
 import { AlertTriangle, Bus, Loader2 } from 'lucide-react';
@@ -43,7 +43,7 @@ export function LoginPage({ onSubmit, pending, error }: LoginPageProps) {
         >
           <h2 className="text-base font-semibold">Sign in</h2>
           <p className="mt-1 text-xs text-muted">
-            Use your registration number. Your password is your registration number.
+            Enter your registration number and a password to continue.
           </p>
 
           <div className="mt-4 flex flex-col gap-3">
@@ -61,7 +61,7 @@ export function LoginPage({ onSubmit, pending, error }: LoginPageProps) {
               label="Password"
               type="password"
               value={password}
-              placeholder="24MID0159"
+              placeholder="Any password"
               onChange={setPassword}
             />
           </div>
@@ -88,8 +88,8 @@ export function LoginPage({ onSubmit, pending, error }: LoginPageProps) {
 
         <p className="mt-4 px-1 text-xs text-muted">
           Signing in identifies you so the app can remember where you wait. It is not a
-          security check — the password is the registration number, and shuttle data is
-          the same for everyone.
+          security check — any password is accepted, and shuttle data is the same for
+          everyone.
         </p>
       </div>
     </div>

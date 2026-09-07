@@ -12,14 +12,16 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
   });
 
-  it('tells the student what the password is, rather than making them guess', () => {
-    render(<LoginPage onSubmit={vi.fn()} pending={false} error={null} />);
-    expect(screen.getByText(/your password is your registration number/i)).toBeInTheDocument();
-  });
-
   it('is honest that this is not a security check', () => {
     render(<LoginPage onSubmit={vi.fn()} pending={false} error={null} />);
+
     expect(screen.getByText(/not a security check/i)).toBeInTheDocument();
+    expect(screen.getByText(/any password is accepted/i)).toBeInTheDocument();
+  });
+
+  it('does not imply the password has to be anything in particular', () => {
+    render(<LoginPage onSubmit={vi.fn()} pending={false} error={null} />);
+    expect(screen.getByLabelText(/^password$/i)).toHaveAttribute('placeholder', 'Any password');
   });
 
   it('will not submit until both fields are filled', async () => {
@@ -36,29 +38,23 @@ describe('LoginPage', () => {
     expect(button).toBeEnabled();
   });
 
-  it('submits what was typed', async () => {
+  it('submits what was typed, whatever the password is', async () => {
     const onSubmit = vi.fn();
     render(<LoginPage onSubmit={onSubmit} pending={false} error={null} />);
 
     await userEvent.type(screen.getByLabelText(/registration number/i), '24MID0159');
-    await userEvent.type(screen.getByLabelText(/^password$/i), '24MID0159');
+    await userEvent.type(screen.getByLabelText(/^password$/i), 'hunter2');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
-    expect(onSubmit).toHaveBeenCalledWith('24MID0159', '24MID0159');
+    expect(onSubmit).toHaveBeenCalledWith('24MID0159', 'hunter2');
   });
 
   it('shows the server’s message when sign-in is refused', () => {
     render(
-      <LoginPage
-        onSubmit={vi.fn()}
-        pending={false}
-        error="Your password is your registration number."
-      />,
+      <LoginPage onSubmit={vi.fn()} pending={false} error="Enter your registration number." />,
     );
 
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      /your password is your registration number/i,
-    );
+    expect(screen.getByRole('alert')).toHaveTextContent(/enter your registration number/i);
   });
 
   it('shows progress and blocks a second submit while signing in', () => {

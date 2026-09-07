@@ -1,8 +1,8 @@
 """Sign-in endpoints.
 
-The password is the registration number, which identifies a student rather
-than authenticating one. Endpoints elsewhere in this API are deliberately not
-gated on it - see `docs/architecture.md`.
+Any registration number and any password are accepted: this identifies a user
+rather than authenticating one. Endpoints elsewhere in this API are
+deliberately not gated on it - see `docs/architecture.md`.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ def login(
     request: LoginRequest,
     service: AuthService = Depends(get_auth_service),
 ) -> SessionResponse:
-    """Sign in with a registration number, using it as the password."""
+    """Sign in with any registration number and any password."""
     try:
         return SessionResponse.from_domain(
             service.login(request.registration_number, request.password)
