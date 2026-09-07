@@ -36,3 +36,52 @@ body {
     'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/*
+ * Sign-in motif.
+ *
+ * The login page draws a stylised version of the campus network with shuttles
+ * running along it - the product, previewed, rather than stock decoration.
+ */
+@keyframes route-flow {
+  to {
+    stroke-dashoffset: -240;
+  }
+}
+
+@keyframes shuttle-travel {
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.35);
+  }
+}
+
+.route-flow {
+  stroke-dasharray: 14 10;
+  animation: route-flow 9s linear infinite;
+}
+
+.rider-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: soft-pulse 2.8s ease-in-out infinite;
+}
+
+/* Motion here is atmosphere, never information. */
+@media (prefers-reduced-motion: reduce) {
+  .route-flow,
+  .rider-pulse {
+    animation: none;
+  }
+}

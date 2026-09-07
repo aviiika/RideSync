@@ -68,3 +68,48 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText(/^password$/i)).toHaveAttribute('type', 'password');
   });
 });
+
+describe('LoginPage presentation', () => {
+  it('says what the product is before the map has loaded', () => {
+    render(<LoginPage onSubmit={vi.fn()} pending={false} error={null} />);
+
+    expect(screen.getByRole('heading', { name: /know exactly when your shuttle arrives/i }))
+      .toBeInTheDocument();
+  });
+
+  it('names the routes it serves', () => {
+    render(<LoginPage onSubmit={vi.fn()} pending={false} error={null} />);
+
+    expect(screen.getByText('Academic Block Circuit')).toBeInTheDocument();
+    expect(screen.getByText("Main Gate - Men's Hostel")).toBeInTheDocument();
+    expect(screen.getByText('Main Gate - Ladies Hostel')).toBeInTheDocument();
+  });
+
+  it('never claims the simulated feed is real GPS', () => {
+    render(<LoginPage onSubmit={vi.fn()} pending={false} error={null} />);
+    expect(screen.getByText(/simulated, not real gps/i)).toBeInTheDocument();
+  });
+
+  it('can reveal and re-hide the password', async () => {
+    render(<LoginPage onSubmit={vi.fn()} pending={false} error={null} />);
+    const field = screen.getByLabelText(/^password$/i);
+
+    expect(field).toHaveAttribute('type', 'password');
+
+    await userEvent.click(screen.getByRole('button', { name: /show password/i }));
+    expect(field).toHaveAttribute('type', 'text');
+
+    await userEvent.click(screen.getByRole('button', { name: /hide password/i }));
+    expect(field).toHaveAttribute('type', 'password');
+  });
+
+  it('submits on Enter, without reaching for the mouse', async () => {
+    const onSubmit = vi.fn();
+    render(<LoginPage onSubmit={onSubmit} pending={false} error={null} />);
+
+    await userEvent.type(screen.getByLabelText(/registration number/i), '24MID0159');
+    await userEvent.type(screen.getByLabelText(/^password$/i), 'pw{Enter}');
+
+    expect(onSubmit).toHaveBeenCalledWith('24MID0159', 'pw');
+  });
+});
