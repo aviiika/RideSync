@@ -31,3 +31,16 @@ def test_defaults_apply_without_an_env_file(tmp_path) -> None:
 
     assert settings.cors_origins == ["http://localhost:5173"]
     assert settings.simulation_tick_ms == 500
+
+
+def test_the_database_lives_at_the_repository_root(tmp_path, monkeypatch) -> None:
+    """A relative default would follow the working directory and split history."""
+    # The suite points DATABASE_URL at a temp file; this test is about the
+    # default, so it has to be asked for without that override in place.
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    settings = Settings(_env_file=tmp_path / "absent.env")
+
+    assert settings.database_url.startswith("sqlite:///")
+    assert settings.database_url.endswith("/data/ridesync.db")
+    # Absolute, so launching uvicorn from backend/ or from the root is the same.
+    assert ":///./" not in settings.database_url

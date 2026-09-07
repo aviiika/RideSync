@@ -8,8 +8,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
-from app.api.deps import get_simulation_engine, get_simulation_runner
+from app.api.deps import (
+    get_history_service,
+    get_route_service,
+    get_simulation_engine,
+    get_simulation_runner,
+)
 from app.config import Settings, get_settings
+from app.services.history_service import network_fingerprint
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
 logger = logging.getLogger("shuttle")
@@ -23,6 +29,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         # The simulation starts running immediately: a demo that needs a button
         # pressed before anything moves is a worse first five seconds.
+        # History describing a different set of stops would poison the
+        # measured ETA error, so it is discarded when the network changes.
+        if settings.history_enabled:
+            get_history_service().adopt_network(
+                network_fingerprint(get_route_service().list_routes())
+            )
+
         engine = get_simulation_engine()
         engine.start()
 

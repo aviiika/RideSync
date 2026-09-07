@@ -213,3 +213,57 @@ class TestAccuracy:
             == 0
         )
         assert broken.accuracy().resolved == 0
+
+
+class TestNetworkFingerprint:
+    def test_changing_a_stop_changes_the_fingerprint(self, repository) -> None:
+        from dataclasses import replace
+
+        from app.models import Coordinate
+        from app.services.history_service import network_fingerprint
+
+        routes = repository.list_routes()
+        before = network_fingerprint(routes)
+
+        first, *rest = routes
+        moved_stop = replace(
+            first.stops[0], position=Coordinate(latitude=12.9800, longitude=79.1700)
+        )
+        moved = replace(first, stops=(moved_stop, *first.stops[1:]))
+
+        assert network_fingerprint((moved, *rest)) != before
+
+    def test_the_same_network_gives_the_same_fingerprint(self, repository) -> None:
+        from app.services.history_service import network_fingerprint
+
+        routes = repository.list_routes()
+        assert network_fingerprint(routes) == network_fingerprint(routes)
+
+    def test_first_run_records_the_network_without_clearing(self, history: HistoryService) -> None:
+        assert history.adopt_network("fingerprint-a") is False
+
+    def test_an_unchanged_network_keeps_its_history(self, history: HistoryService) -> None:
+        history.adopt_network("fingerprint-a")
+        history.record_prediction(
+            shuttle_id="A-01", route_id="R", stop_id="S", estimate=make_estimate(60)
+        )
+
+        assert history.adopt_network("fingerprint-a") is False
+        assert history.accuracy().pending == 1
+
+    def test_a_changed_network_discards_the_old_history(self, history: HistoryService) -> None:
+        """Scoring predictions for one campus against arrivals at another is meaningless."""
+        history.adopt_network("fingerprint-a")
+        history.record_prediction(
+            shuttle_id="A-01", route_id="R", stop_id="S", estimate=make_estimate(60)
+        )
+        history.record_arrival(
+            shuttle_id="A-01", route_id="R", stop_id="S", arrived_at=datetime.now(UTC)
+        )
+
+        assert history.adopt_network("fingerprint-b") is True
+
+        accuracy = history.accuracy()
+        assert accuracy.arrivals == 0
+        assert accuracy.pending == 0
+        assert accuracy.resolved == 0

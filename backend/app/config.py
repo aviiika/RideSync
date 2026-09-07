@@ -57,7 +57,12 @@ class Settings(BaseSettings):
 
     #: Where trip history lives. SQLite by default: append-only, local, and
     #: no container to start before a demo.
-    database_url: str = "sqlite:///./data/ridesync.db"
+    #:
+    #: Anchored to the repository root rather than the working directory. A
+    #: relative default put the database wherever uvicorn happened to be
+    #: launched from, so `backend/data/` and `data/` each grew a copy and the
+    #: measured ETA error came from whichever one you were not looking at.
+    database_url: str = f"sqlite:///{(REPO_ROOT / 'data' / 'ridesync.db').as_posix()}"
 
     #: History is observability; turn it off and nothing user-facing changes.
     history_enabled: bool = True

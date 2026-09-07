@@ -26,6 +26,20 @@ class Base(DeclarativeBase):
     pass
 
 
+class Meta(Base):
+    """Small key/value facts about the database itself.
+
+    Currently one: a fingerprint of the route network the history was recorded
+    against. Predictions made for a different set of stops cannot honestly be
+    scored against arrivals at this one.
+    """
+
+    __tablename__ = "meta"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(String(128))
+
+
 class Arrival(Base):
     """A shuttle actually reached a stop."""
 

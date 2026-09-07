@@ -7,16 +7,19 @@ simulation or blank the map.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import statistics
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from sqlalchemy import select
 
-from app.db.models import Arrival, Prediction
+from app.db.models import Arrival, Meta, Prediction
 from app.db.session import Database
 from app.eta import EtaEstimate
+from app.models import Route
 
 logger = logging.getLogger("shuttle.history")
 
@@ -129,6 +132,44 @@ class HistoryService:
             logger.exception("could not record arrival for %s", shuttle_id)
             return 0
 
+    def adopt_network(self, fingerprint: str) -> bool:
+        """Discard history recorded against a different route network.
+
+        Predictions made for stops that have since moved cannot honestly be
+        scored against arrivals at the new ones - the measured error would
+        describe two campuses at once. Returns whether anything was cleared.
+        """
+        try:
+            with self._database.session() as session:
+                stored = session.get(Meta, NETWORK_FINGERPRINT_KEY)
+
+                if stored is not None and stored.value == fingerprint:
+                    return False
+
+                # History with no fingerprint predates this check, so the
+                # network it describes is unknown - which is not the same as
+                # matching, and must not be treated as such.
+                has_history = session.query(Arrival.id).first() is not None
+                cleared = stored is not None or has_history
+
+                if cleared:
+                    session.query(Prediction).delete()
+                    session.query(Arrival).delete()
+                    logger.warning(
+                        "route network changed or is unknown - cleared trip history "
+                        "recorded against the previous one"
+                    )
+
+                if stored is None:
+                    session.add(Meta(key=NETWORK_FINGERPRINT_KEY, value=fingerprint))
+                else:
+                    stored.value = fingerprint
+
+                return cleared
+        except Exception:
+            logger.exception("could not check the recorded network")
+            return False
+
     def accuracy(self) -> EtaAccuracy:
         """Measure the ETA engine against what actually happened."""
         try:
@@ -174,3 +215,23 @@ class HistoryService:
 def _as_utc(value: datetime) -> datetime:
     """SQLite hands back naive datetimes; treat them as the UTC they were."""
     return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+
+NETWORK_FINGERPRINT_KEY = "network_fingerprint"
+
+
+def network_fingerprint(routes: Iterable[Route]) -> str:
+    """A stable digest of the route network's shape.
+
+    Changing a stop's position changes this, which is the point: it is how the
+    application notices that recorded history describes a different campus.
+    """
+    parts: list[str] = []
+    for route in sorted(routes, key=lambda route: route.id):
+        parts.append(route.id)
+        for stop in route.stops:
+            # Five decimal places is about a metre - finer than any correction
+            # anyone will make by hand.
+            parts.append(f"{stop.id}:{stop.position.latitude:.5f},{stop.position.longitude:.5f}")
+
+    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:32]

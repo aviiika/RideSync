@@ -239,17 +239,47 @@ Three routes, all **inside the VIT Vellore campus**, defined in
 
 | Route | Name | Stops | Serves | End of route |
 | --- | --- | --- | --- | --- |
-| `ROUTE-MH` | Main Gate - Men's Hostel | 14 | Every men's hostel block, via the academic blocks | Reverses |
-| `ROUTE-LH` | Main Gate - Ladies Hostel | 8 | Ladies Hostel A, F, G and S blocks | Reverses |
-| `ROUTE-AC` | Academic Block Circuit | 9 | Main Building, Library, Anna Auditorium, PRP, CDMM, TT, MGR, SJT, SMV | Loops |
+| `ROUTE-MH` | Main Gate - Men's Hostel | 13 | Mess and blocks M, A, B, D, J, K, Q — via the academic blocks | Reverses |
+| `ROUTE-LH` | Main Gate - Ladies Hostel | 8 | Blocks G, A, F, S and the mess | Reverses |
+| `ROUTE-AC` | Academic Block Circuit | 9 | Main Building, Library, SMV, Anna Auditorium, TT, Gandhi Block, PRP, MGR, SJT | Loops |
 
-Thirty-one stops across the three routes. Routes are named for the journey they
-make, so a shuttle announces where it is going: *"Main Gate - Men's Hostel 2"*.
+Thirty stops. Routes are named for the journey they make, so a shuttle
+announces where it is going: *"Main Gate - Men's Hostel 2"*.
 
-Coordinates are hand-placed approximations of the campus roads, accurate enough
-to read as the real place but not surveyed. They are easy to correct: every
-position lives in those three JSON files, and the map frames and fences itself
-to whatever the data says, so moving a stop moves the map with it.
+### The coordinates are estimates — here is how to make them exact
+
+Every position is hand-placed from the campus layout, not surveyed. The
+footprint is about **860 m east-west by 670 m north-south**, which is campus
+scale, but individual buildings will be tens of metres out.
+
+Correcting one takes about ten seconds:
+
+1. Right-click the building in Google Maps and click the latitude/longitude to
+   copy it.
+2. Paste it into that stop's `latitude` and `longitude` in the route JSON.
+3. Update the matching entry in `geometry` — **note the order is reversed
+   there**, `[longitude, latitude]`, because that is what MapLibre expects.
+4. Re-run the inspector below.
+
+Nothing else needs touching. The map frames and fences itself to the data,
+distances are computed from it, and the ETAs follow.
+
+### Checking the network
+
+From `backend/`:
+
+```powershell
+.venv\Scripts\python.exe scripts/inspect_network.py
+```
+
+It prints each route's length, the distance between consecutive stops, one lap
+at the route's speed, and the network's footprint and centre — so the numbers
+can be compared against Google Maps rather than trusted because they look
+plausible. To check one place against every other:
+
+```powershell
+.venv\Scripts\python.exe scripts/inspect_network.py --stop "PRP Block"
+```
 
 ## Signing in
 

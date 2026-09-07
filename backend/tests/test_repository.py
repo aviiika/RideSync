@@ -143,6 +143,7 @@ def test_the_network_serves_academic_blocks_and_both_hostel_zones(
         "smv block",
         "prp block",
         "mgr block",
+        "gandhi block",
         "anna auditorium",
         "central library",
     ):
@@ -158,5 +159,5 @@ def test_the_hostel_blocks_the_service_exists_for_are_all_served(
     for block in ("a block", "f block", "g block", "s block"):
         assert f"ladies hostel {block}" in names, f"no stop at ladies hostel {block}"
 
-    for block in ("a", "b", "c", "d", "j", "k", "l", "m", "q"):
+    for block in ("a", "b", "d", "j", "k", "m", "q"):
         assert f"men's hostel {block} block" in names, f"no stop at men's hostel {block} block"

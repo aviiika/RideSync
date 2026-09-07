@@ -15,9 +15,9 @@ export const route: Route = {
   average_speed_kmh: 22,
   loop_mode: 'LOOP',
   geometry: [
-    [79.1559, 12.9695],
-    [79.157, 12.9708],
-    [79.1559, 12.9695],
+    [79.1578, 12.9698],
+    [79.1587, 12.9709],
+    [79.1578, 12.9698],
   ],
   stops: [
     {
@@ -25,8 +25,8 @@ export const route: Route = {
       name: 'Main Building',
       route_id: 'ROUTE-AC',
       sequence: 0,
-      latitude: 12.9695,
-      longitude: 79.1559,
+      latitude: 12.9698,
+      longitude: 79.1578,
     },
   ],
 };

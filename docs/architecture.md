@@ -448,8 +448,11 @@ and is stubbed; its logic lives in pure functions that are tested directly.
 
 Stated plainly rather than discovered later.
 
-- Route geometry is hand-placed approximation of campus roads, not surveyed and
-  not road-matched.
+- Route geometry is hand-placed from the campus layout, not surveyed and not
+  road-matched. The footprint and the relative arrangement of buildings are
+  right; individual stops will be tens of metres out until someone pastes real
+  coordinates in. `scripts/inspect_network.py` exists to make that checkable
+  rather than assumed.
 - A backend restart reseeds the world. Trip history survives in the database,
   but live positions do not: the simulation always restarts from the seed.
 - Historical trips are recorded but cannot be replayed. The rows exist; there
